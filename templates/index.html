@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bhutan Public Services Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #E8ECFB;   /* Omdena lavender-blue background */
+      --bg-card:      #FFFFFF;
+      --navy:         #14225A;   /* deep navy headers / brand */
+      --navy-soft:    #2C3878;
+      --text:         #4A4F6E;   /* body grey-blue */
+      --muted:        #8089A8;
+      --purple:       #6C5CE7;   /* CTA purple */
+      --purple-deep:  #5848D8;
+      --accent:       #FFD166;   /* warm Bhutan-inspired accent */
+      --good:         #21A179;
+      --warn:         #D97757;
+      --bad:          #C0392B;
+      --border:       rgba(20, 34, 90, 0.08);
+      --shadow-sm:    0 2px 8px rgba(20, 34, 90, 0.06);
+      --shadow-md:    0 8px 24px rgba(20, 34, 90, 0.08);
+      --radius-sm:    12px;
+      --radius-md:    18px;
+      --radius-lg:    28px;
+      --radius-pill:  999px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Header ─── */
+    header.site {
+      background: #F4F5FB;
+      padding: 18px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(20, 34, 90, 0.04);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+    }
+    .brand-mark {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: conic-gradient(from 220deg, #6C5CE7, #00B4D8, #FFD166, #6C5CE7);
+      position: relative;
+    }
+    .brand-mark::after {
+      content: ""; position: absolute; inset: 6px;
+      border-radius: 50%; background: #F4F5FB;
+    }
+    .nav-actions {
+      display: flex; align-items: center; gap: 28px;
+    }
+    .dev-toggle {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: var(--navy-soft); font-weight: 500;
+      user-select: none;
+    }
+    .switch {
+      position: relative;
+      width: 44px; height: 24px;
+      background: #C8CEE5;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+    .switch.on { background: var(--purple); }
+    .switch.on::after { transform: translateX(20px); }
+
+    .pill-btn {
+      background: var(--purple);
+      color: white;
+      padding: 10px 24px;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .pill-btn:hover { background: var(--purple-deep); }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 60px 48px 32px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      color: var(--navy);
+      font-size: clamp(32px, 4.2vw, 52px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      line-height: 1.08;
+    }
+    .hero p {
+      color: var(--navy-soft);
+      font-size: 18px;
+      max-width: 680px;
+      margin: 0;
+    }
+    .hero .kuzu {
+      display: inline-block;
+      background: white;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ─── Main grid ─── */
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 48px 80px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* ─── Chat panel ─── */
+    .chat-panel {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 600px;
+    }
+    .chat-header {
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      color: var(--navy);
+      font-size: 20px;
+    }
+    .status-dot {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--muted);
+    }
+    .status-dot::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(33, 161, 121, 0.15);
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: 560px;
+    }
+    .msg {
+      max-width: 78%;
+      animation: rise 0.3s ease;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-bubble {
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+    .msg.user { align-self: flex-end; }
+    .msg.user .msg-bubble {
+      background: var(--navy);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+    .msg.bot { align-self: flex-start; max-width: 86%; }
+    .msg.bot .msg-bubble {
+      background: #F4F5FB;
+      color: var(--navy);
+      border-bottom-left-radius: 6px;
+    }
+    .msg.bot.warn .msg-bubble {
+      background: #FFF5EE;
+      border-left: 3px solid var(--warn);
+    }
+    .msg-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      padding: 0 4px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .msg-meta .tag {
+      background: rgba(108, 92, 231, 0.08);
+      color: var(--purple-deep);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-weight: 500;
+    }
+
+    /* ─── Classification card (dev mode) ─── */
+    .clf-card {
+      margin-top: 10px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', 'Menlo', monospace;
+      font-size: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .clf-card h4 {
+      margin: 0 0 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .clf-card h4::before {
+      content: "⚙";
+      color: var(--purple);
+      font-size: 14px;
+    }
+    .clf-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 56px;
+      gap: 12px;
+      padding: 6px 0;
+      align-items: center;
+      border-top: 1px dashed var(--border);
+    }
+    .clf-row:first-of-type { border-top: none; }
+    .clf-dim   { color: var(--muted); font-weight: 500; }
+    .clf-label { color: var(--navy); font-weight: 600; }
+    .clf-label.bad  { color: var(--bad); }
+    .clf-label.warn { color: var(--warn); }
+    .clf-conf {
+      text-align: right;
+      color: var(--purple-deep);
+      font-weight: 600;
+    }
+    .conf-bar {
+      grid-column: 1 / -1;
+      height: 3px;
+      background: #EDEFF8;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .conf-bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--accent));
+      border-radius: 2px;
+    }
+
+    /* ─── Composer ─── */
+    .composer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: white;
+    }
+    .composer input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      padding: 14px 22px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--navy);
+      background: #F8F9FD;
+      transition: all 0.15s ease;
+      outline: none;
+    }
+    .composer input:focus {
+      background: white;
+      border-color: var(--purple);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
+    }
+    .composer button {
+      background: var(--purple);
+      color: white;
+      border: none;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .composer button:hover { background: var(--purple-deep); transform: scale(1.05); }
+    .composer button:disabled {
+      background: #C8CEE5; cursor: not-allowed; transform: none;
+    }
+
+    /* ─── Sidebar ─── */
+    aside {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 24px;
+    }
+    .side-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .side-card h3 {
+      font-family: 'Fraunces', serif;
+      color: var(--navy);
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .side-card p { font-size: 14px; margin: 0 0 12px; }
+    .quick-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .quick-chips button {
+      background: #F4F5FB;
+      border: 1px solid var(--border);
+      color: var(--navy);
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+    .quick-chips button:hover {
+      background: var(--purple);
+      color: white;
+      border-color: var(--purple);
+    }
+
+    .dev-card {
+      background: linear-gradient(135deg, #14225A 0%, #2C3878 100%);
+      color: white;
+    }
+    .dev-card h3 { color: white; }
+    .dev-card p { color: rgba(255,255,255,0.75); }
+    .dev-card .toggle-inline {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 12px;
+    }
+    .dev-card .toggle-inline label {
+      font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 500;
+    }
+
+    /* ─── Typing indicator ─── */
+    .typing {
+      display: inline-flex; gap: 4px; padding: 14px 18px;
+      background: #F4F5FB; border-radius: var(--radius-md);
+      border-bottom-left-radius: 6px;
+    }
+    .typing span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--navy-soft);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+    footer .team { color: var(--navy-soft); font-weight: 600; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 960px) {
+      header.site { padding: 16px 20px; }
+      .hero { padding: 36px 20px 20px; }
+      main {
+        padding: 0 20px 60px;
+        grid-template-columns: 1fr;
+      }
+      aside { position: static; }
+      .nav-actions { gap: 14px; }
+      .dev-toggle span.label-text { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>Bhutan Public Services</span>
+    </div>
+    <div class="nav-actions">
+      <div class="dev-toggle" id="devToggle">
+        <span class="label-text">Dev mode</span>
+        <div class="switch" id="devSwitch" role="switch" aria-checked="false" tabindex="0"></div>
+      </div>
+      <button class="pill-btn" onclick="resetChat()">New chat</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <span class="kuzu">🙏 Kuzuzangpo la</span>
+    <h1>Government services,<br>one conversation away.</h1>
+    <p>Ask about permits, hospitals, business registration, and more. Powered by an AI assistant designed for Bhutan's public services — built by Omdena Sprint Team 4.</p>
+  </section>
+
+  <main>
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span class="chat-title">Assistant</span>
+        <span class="status-dot" id="statusDot">Connected</span>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="msg bot">
+          <div class="msg-bubble">Kuzuzangpo la! 🙏 I can help you with permits, hospitals, business registration, and other Bhutan public services. What would you like to know?</div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <input
+          id="input"
+          type="text"
+          placeholder="Ask anything about public services…"
+          autocomplete="off"
+        />
+        <button id="sendBtn" onclick="sendMessage()" aria-label="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <aside>
+      <div class="side-card">
+        <h3>Try asking</h3>
+        <p>Tap a question to get started.</p>
+        <div class="quick-chips">
+          <button onclick="sendPreset(this)">What documents do I need for a construction permit?</button>
+          <button onclick="sendPreset(this)">Where is the nearest hospital in Paro?</button>
+          <button onclick="sendPreset(this)">How do I register a sole proprietorship?</button>
+          <button onclick="sendPreset(this)">Where is the permit office in Thimphu?</button>
+        </div>
+      </div>
+
+      <div class="side-card dev-card">
+        <h3>Developer view</h3>
+        <p>Turn on dev mode to see how the Gemini classifier interprets each message — scope, safety, request type, and service domain.</p>
+        <div class="toggle-inline">
+          <label>Show classifications</label>
+          <div class="switch" id="devSwitch2" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    Bhutan Voice-First Public Service Assistant ·
+    <span class="team">Omdena Sprint · Team 4</span>
+  </footer>
+
+  <script>
+    // ─── State ───
+    let devMode = false;
+    const messagesEl = document.getElementById('messages');
+    const inputEl    = document.getElementById('input');
+    const sendBtn    = document.getElementById('sendBtn');
+    const sw1        = document.getElementById('devSwitch');
+    const sw2        = document.getElementById('devSwitch2');
+
+    // ─── Dev mode toggle (both switches stay in sync) ───
+    function setDevMode(on) {
+      devMode = on;
+      [sw1, sw2].forEach(sw => {
+        sw.classList.toggle('on', on);
+        sw.setAttribute('aria-checked', String(on));
+      });
+      // Show/hide existing classification cards already in the DOM
+      document.querySelectorAll('.clf-card').forEach(card => {
+        card.style.display = on ? 'block' : 'none';
+      });
+    }
+    [sw1, sw2].forEach(sw => {
+      sw.addEventListener('click', () => setDevMode(!devMode));
+      sw.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          setDevMode(!devMode);
+        }
+      });
+    });
+
+    // ─── Helpers ───
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function addUserMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'msg user';
+      div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+      messagesEl.appendChild(div);
+      scrollDown();
+    }
+
+    function addTypingIndicator() {
+      const div = document.createElement('div');
+      div.className = 'msg bot';
+      div.id = 'typing-indicator';
+      div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+      messagesEl.appendChild(div);
+      scrollDown();
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    function addBotMessage(data) {
+      const wrap = document.createElement('div');
+      const isWarn = !!data.fallback_id || (data.classification.safety.label === 'unsafe');
+      wrap.className = 'msg bot' + (isWarn ? ' warn' : '');
+
+      const meta = [];
+      if (data.step_label)  meta.push(`<span class="tag">${escapeHtml(data.step_label)}</span>`);
+      if (data.sources && data.sources.length) {
+        meta.push(`📚 ${escapeHtml(data.sources.join(', '))}`);
+      }
+      if (data.fallback_id)  meta.push(`⚠ ${escapeHtml(data.fallback_id)}`);
+
+      wrap.innerHTML = `
+        <div class="msg-bubble">${escapeHtml(data.bot_text)}</div>
+        ${meta.length ? `<div class="msg-meta">${meta.join('')}</div>` : ''}
+      `;
+      messagesEl.appendChild(wrap);
+
+      // Always build the classification card; show/hide based on devMode
+      const clf = buildClassificationCard(data.classification, data.classifier_kind);
+      clf.style.display = devMode ? 'block' : 'none';
+      messagesEl.appendChild(clf);
+
+      scrollDown();
+    }
+
+    function buildClassificationCard(c, classifierKind) {
+      const dims = [
+        ['In-scope',     c.in_scope],
+        ['Safety',       c.safety],
+        ['Request type', c.request_type],
+        ['Service',      c.service],
+      ];
+      const labelClass = (dim, label) => {
+        if (dim === 'In-scope' && label === 'out_of_scope') return 'bad';
+        if (dim === 'Safety'   && label === 'unsafe')       return 'bad';
+        return '';
+      };
+      const rows = dims.map(([name, v]) => `
+        <div class="clf-row">
+          <span class="clf-dim">${name}</span>
+          <span class="clf-label ${labelClass(name, v.label)}">${escapeHtml(v.label)}</span>
+          <span class="clf-conf">${(v.confidence * 100).toFixed(0)}%</span>
+          <div class="conf-bar"><span style="width:${(v.confidence * 100).toFixed(0)}%"></span></div>
+        </div>
+      `).join('');
+
+      const card = document.createElement('div');
+      card.className = 'clf-card';
+      card.innerHTML = `
+        <h4>Classifier · ${escapeHtml(classifierKind || 'Unknown')}</h4>
+        ${rows}
+      `;
+      return card;
+    }
+
+    function scrollDown() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // ─── Send a message ───
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      addUserMessage(text);
+      addTypingIndicator();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+        removeTypingIndicator();
+        if (!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        addBotMessage(data);
+      } catch (err) {
+        removeTypingIndicator();
+        const fail = document.createElement('div');
+        fail.className = 'msg bot warn';
+        fail.innerHTML = `<div class="msg-bubble">Sorry, something went wrong on our side. Please try again.</div>`;
+        messagesEl.appendChild(fail);
+        scrollDown();
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    function sendPreset(btn) {
+      inputEl.value = btn.textContent.trim();
+      sendMessage();
+    }
+
+    function resetChat() {
+      messagesEl.innerHTML = `
+        <div class="msg bot">
+          <div class="msg-bubble">Kuzuzangpo la! 🙏 I can help you with permits, hospitals, business registration, and other Bhutan public services. What would you like to know?</div>
+        </div>
+      `;
+      inputEl.focus();
+    }
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Focus on load
+    window.addEventListener('load', () => inputEl.focus());
+  </script>
+</body>
+</html>
