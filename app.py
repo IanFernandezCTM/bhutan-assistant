@@ -26,7 +26,7 @@ except ImportError:
 # ═══════════════════════════════════════════════════════════════════
 GEMINI_API_KEY = os.environ.get(
     "GEMINI_API_KEY",
-    "AIzaSyAX_gmaOJG6wPmRcI9VgS9O972mUzVrB5Y"  # ← replace before deploy
+    ""  # ← replace before deploy
 )
 GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 
