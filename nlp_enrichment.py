@@ -5,16 +5,16 @@
 
   Source / credit:
     Adapted from team_a_nlp/intent_classifier.py — the bilingual
-    (English + Dzongkha) IntentClassifier written by ghimire lokraj,
-    part of Team A's NLP track. Supabase/Ollama RAG ingestion work in
-    that same folder is by Vaibhavi.
+    (English + Dzongkha) IntentClassifier from Team A's NLP track.
+    The Supabase/Ollama RAG ingestion work in that same folder is the
+    Tier-2 vector-DB retrieval path on this prototype's roadmap.
 
   Why this exists:
     The prototype's Gemini classifier answers FOUR dimensions
     (in_scope / safety / request_type / service) but is English-only
-    and pulls no structured data out of the message. lokraj's classifier
+    and pulls no structured data out of the message. Team A's NLP track
     already solved both problems. Rather than duplicate that effort, we
-    reuse his language-detection + entity-extraction logic verbatim and
+    reuse its language-detection + entity-extraction logic verbatim and
     bolt it on as an enrichment pass after the Gemini call.
 
   This module is intentionally dependency-free (regex only), so it adds
@@ -27,7 +27,7 @@ from typing import Dict
 
 
 # Dzongkha / Tibetan script lives in the Unicode block U+0F00–U+0FFF.
-# (lokraj's heuristic — if any character falls in that range, it's Dzongkha.)
+# (Team A's heuristic — if any character falls in that range, it's Dzongkha.)
 _DZONGKHA_CHARS = re.compile(r"[ༀ-࿿]")
 
 
@@ -40,7 +40,7 @@ def extract_entities(text: str) -> Dict[str, str]:
     """
     Pull structured fields out of a citizen's message.
 
-    Faithful to lokraj's `_extract_entities` in team_a_nlp — same regexes,
+    Faithful to Team A's `_extract_entities` in team_a_nlp — same regexes,
     same Dzongkha keyword triggers — so the credit is real, not cosmetic.
     """
     entities: Dict[str, str] = {}
@@ -89,7 +89,7 @@ def enrich(user_text: str) -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    # Quick smoke test — mirrors lokraj's original test cases.
+    # Quick smoke test — mirrors team_a_nlp's original test cases.
     for q in [
         "I want to register my land plot 905",
         "ཁྲལ་ སྤྲོད་ 2026",

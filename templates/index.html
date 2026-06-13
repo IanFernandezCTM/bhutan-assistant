@@ -69,6 +69,17 @@
       content: ""; position: absolute; inset: 6px;
       border-radius: 50%; background: #F4F5FB;
     }
+    .brand-team {
+      align-self: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--purple-deep);
+      background: rgba(108, 92, 231, 0.10);
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+    }
     .nav-actions {
       display: flex; align-items: center; gap: 28px;
     }
@@ -303,7 +314,39 @@
       background: linear-gradient(90deg, var(--purple), var(--accent));
       border-radius: 2px;
     }
-    /* NLP enrichment rows (team_a_nlp / lokraj) */
+    /* NLP enrichment rows (team_a_nlp track) */
+    .clf-subhead {
+      margin: 14px 0 4px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .clf-subhead .clf-track {
+      color: var(--purple-deep);
+      background: #F2F0FB;
+      border-radius: 5px;
+      padding: 1px 7px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .clf-subhead .clf-credit {
+      flex-basis: 100%;
+      font-weight: 400;
+      font-size: 10px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', 'Menlo', monospace;
+    }
     .clf-row.clf-enrich { grid-template-columns: 110px 1fr; }
     .clf-entities { display: flex; flex-wrap: wrap; gap: 6px; }
     .clf-entity {
@@ -461,6 +504,7 @@
     <div class="brand">
       <div class="brand-mark"></div>
       <span>Bhutan Public Services</span>
+      <span class="brand-team">Team A</span>
     </div>
     <div class="nav-actions">
       <div class="dev-toggle" id="devToggle">
@@ -474,7 +518,7 @@
   <section class="hero">
     <span class="kuzu">🙏 Kuzuzangpo la</span>
     <h1>Government services,<br>one conversation away.</h1>
-    <p>Ask about permits, hospitals, business registration, and more. Powered by an AI assistant designed for Bhutan's public services — built by Omdena Sprint Team 4.</p>
+    <p>Ask about permits, hospitals, business registration, and more — in English or Dzongkha. An AI assistant designed for Bhutan's public services, built by Team A.</p>
   </section>
 
   <main>
@@ -509,18 +553,18 @@
     <aside>
       <div class="side-card">
         <h3>Try asking</h3>
-        <p>Tap a question to get started.</p>
+        <p>Tap a question — turn on dev mode to watch the language and entities it detects.</p>
         <div class="quick-chips">
           <button onclick="sendPreset(this)">What documents do I need for a construction permit?</button>
-          <button onclick="sendPreset(this)">Where is the nearest hospital in Paro?</button>
-          <button onclick="sendPreset(this)">How do I register a sole proprietorship?</button>
-          <button onclick="sendPreset(this)">Where is the permit office in Thimphu?</button>
+          <button onclick="sendPreset(this)">Register my land plot 905 — my CID is 11503002345</button>
+          <button onclick="sendPreset(this)">How do I file my tax for 2026?</button>
+          <button onclick="sendPreset(this)" lang="dz">ཁྲལ་སྤྲོད་ 2026</button>
         </div>
       </div>
 
       <div class="side-card dev-card">
         <h3>Developer view</h3>
-        <p>Turn on dev mode to see how the Gemini classifier interprets each message — scope, safety, request type, and service domain.</p>
+        <p>Turn on dev mode to see the full pipeline per message: the Gemini classifier (scope, safety, request type, service) plus Team A's bilingual language detection and entity extraction.</p>
         <div class="toggle-inline">
           <label>Show classifications</label>
           <div class="switch" id="devSwitch2" role="switch" aria-checked="false" tabindex="0"></div>
@@ -531,7 +575,7 @@
 
   <footer>
     Bhutan Voice-First Public Service Assistant ·
-    <span class="team">Omdena Sprint · Team 4</span>
+    <span class="team">Omdena · Team A</span>
   </footer>
 
   <script>
@@ -642,7 +686,7 @@
         </div>
       `).join('');
 
-      // NLP enrichment (team_a_nlp / lokraj): language + extracted entities.
+      // NLP enrichment (team_a_nlp / Team A): language + extracted entities.
       const langName = language === 'dz' ? 'Dzongkha (རྫོང་ཁ)' : 'English';
       const entityList = entities && Object.keys(entities).length
         ? Object.entries(entities).map(([k, val]) =>
@@ -654,6 +698,10 @@
       card.innerHTML = `
         <h4>Classifier · ${escapeHtml(classifierKind || 'Unknown')}</h4>
         ${rows}
+        <div class="clf-subhead">
+          NLP enrichment · <span class="clf-track">team_a_nlp</span>
+          <span class="clf-credit">bilingual detection + entity extraction · Team A NLP track</span>
+        </div>
         <div class="clf-row clf-enrich">
           <span class="clf-dim">Language</span>
           <span class="clf-label">${escapeHtml(langName)}</span>

@@ -1,18 +1,18 @@
 """
 ═══════════════════════════════════════════════════════════════════════
   BHUTAN VOICE-FIRST PUBLIC SERVICE ASSISTANT — Flask Backend
-  Wraps the Team 4 classifier + conversation engine in a web API.
+  Wraps Team A's classifier + conversation engine in a web API.
 
-  TIER 1 PATCH APPLIED — based on team Week-3 findings:
-    1. Chain-of-thought classifier (Abdelrahman Abouzid)
+  TIER 1 PATCH APPLIED — based on Team A's Week-3 findings:
+    1. Chain-of-thought classifier
        95.1% benchmark accuracy vs. 85.4% for single-call.
     2. Schema-constrained output — eliminates the `service=unknown`
-       failure mode that Debanjan Mondal documented.
-    3. Expanded label set (Debanjan Mondal):
+       failure mode the team documented.
+    3. Expanded label set:
          + facility_lookup     (vs. office_location confusion)
          + ndi, civil_registration, education, taxes
     4. Per-dimension short-circuiting — out_of_scope skips 3 calls,
-       unsafe skips 2 calls. Cost optimisation per Abdelrahman's design.
+       unsafe skips 2 calls. Cost optimisation per Team A's design.
 
   NOT in this patch (deliberate, to keep Render footprint small):
     • BART zero-shot first gate — needs torch + 1.6 GB model.
@@ -30,7 +30,7 @@ from typing import Dict, List, Optional, Tuple
 from flask import Flask, request, jsonify, render_template
 
 # Bilingual language detection + entity extraction, reused from the
-# team_a_nlp track (ghimire lokraj). See nlp_enrichment.py for credit.
+# team_a_nlp track (Team A). See nlp_enrichment.py for credit.
 from nlp_enrichment import enrich
 
 try:
@@ -48,7 +48,7 @@ GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 
 
 # ═══════════════════════════════════════════════════════════════════
-# ✏️  EDIT ME — LABEL CATEGORIES (Debanjan's expanded set)
+# ✏️  EDIT ME — LABEL CATEGORIES (Team A's expanded set)
 # ═══════════════════════════════════════════════════════════════════
 IN_SCOPE_LABELS = ["in_scope", "out_of_scope"]
 SAFETY_LABELS   = ["safe", "unsafe"]
@@ -109,7 +109,7 @@ class GeminiClassifier(BaseClassifier):
       • out_of_scope  → skip safety, request_type, service (3 calls saved)
       • unsafe        → skip request_type, service        (2 calls saved)
 
-    Design: Abdelrahman Abouzid. Benchmark: 95.1% overall accuracy
+    Design: Team A. Benchmark: 95.1% overall accuracy
     on the 36-question labelled test set (`bhutan_classifier_test_set.csv`).
     """
 
@@ -128,7 +128,7 @@ class GeminiClassifier(BaseClassifier):
         },
         {
             "request": "How to plan tour in Bhutan?",
-            "reasoning": "Tour planning is a tourism / commercial activity. While Bhutan has a Department of Tourism, tour planning is normally handled by tour operators, not as a citizen-facing public service. Treat as out-of-scope. (This fixes the misclassification Neelakshi Joshi found in testing.)",
+            "reasoning": "Tour planning is a tourism / commercial activity. While Bhutan has a Department of Tourism, tour planning is normally handled by tour operators, not as a citizen-facing public service. Treat as out-of-scope. (This fixes a misclassification Team A found in testing.)",
             "label": "out_of_scope",
             "confidence": 0.85,
         },
@@ -191,7 +191,7 @@ class GeminiClassifier(BaseClassifier):
         },
         {
             "request": "How do I register my child's birth?",
-            "reasoning": "Birth registration is handled by the Department of Civil Registration and Census (DCRC) — civil_registration. (This closes the gap Tandin Kelzang and Lakeisha Gurung found in testing.)",
+            "reasoning": "Birth registration is handled by the Department of Civil Registration and Census (DCRC) — civil_registration. (This closes a gap Team A found in testing.)",
             "label": "civil_registration",
             "confidence": 0.98,
         },
@@ -386,12 +386,12 @@ class GeminiClassifier(BaseClassifier):
 
 
 class KeywordClassifier(BaseClassifier):
-    """No-API fallback — same approach as original Team 3 code."""
+    """No-API fallback — same approach as Team A's original rule-based code."""
 
     OUT_OF_SCOPE_WORDS = [
         "cricket", "football", "soccer", "movie", "joke", "weather",
         "stock", "forex", "election", "recipe", "song", "celebrity",
-        "tour",  # added per Neelakshi's finding
+        "tour",  # added per Team A testing
     ]
     UNSAFE_WORDS = [
         "diagnose", "diagnosis", "cancer", "tumour", "tumor",
@@ -691,8 +691,8 @@ def chat():
     classification = CLASSIFIER.classify(user_text)
     response       = ENGINE.process(user_text, classification)
 
-    # Enrichment pass (team_a_nlp / ghimire lokraj): detect Dzongkha vs.
-    # English and pull out structured entities (CID, plot ID, year, doc type).
+    # Enrichment pass (team_a_nlp / Team A): detect Dzongkha vs. English
+    # and pull out structured entities (CID, plot ID, year, doc type).
     enrichment = enrich(user_text)
 
     return jsonify({
