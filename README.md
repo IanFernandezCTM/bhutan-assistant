@@ -9,19 +9,22 @@ Voice-first AI assistant for Bhutan public services, built by Team A.
 
 ---
 
-## Credits — NLP enrichment
+## Credits — cross-team integration
 
-The `language` and `entities` fields on every `/api/chat` response reuse
-**Team A's NLP track** (`team_a_nlp/`), wired in via
-[`nlp_enrichment.py`](nlp_enrichment.py):
+Each `/api/chat` response is built from three teams' work, all dependency-free
+(regex only — nothing added to `requirements.txt`) and shown in Dev Mode:
 
-- the bilingual `IntentClassifier` — Dzongkha Unicode detection + entity
-  extraction (CID, plot ID, tax year, document type), and
-- the Ollama + Supabase pgvector RAG **ingestion pipeline**, the production
-  vector-DB retrieval path (Tier 2 on this prototype's roadmap).
+- **Team A NLP track** (`team_a_nlp/`) → [`nlp_enrichment.py`](nlp_enrichment.py):
+  bilingual `IntentClassifier` — Dzongkha Unicode detection + entity extraction
+  (CID, plot ID, tax year, document type). Their Ollama + Supabase pgvector RAG
+  ingestion pipeline is the Tier-2 vector-DB retrieval path on the roadmap.
+- **Team B routing module** (`team_b/routing_module/`) → [`team_b_routing.py`](team_b_routing.py):
+  the deterministic `IntentRouter` — maps a request to the downstream agent
+  (`permit_agent`, `business_reg_agent`, …) and extracts routing slots
+  (district, facility, document type, agency).
 
-The enrichment layer is dependency-free (regex only), so it adds nothing to
-`requirements.txt` and runs on the Render free tier.
+When a citizen writes in Dzongkha, the assistant replies in Dzongkha with the
+English translation in parentheses (Gemini-powered; English-only without a key).
 
 ---
 

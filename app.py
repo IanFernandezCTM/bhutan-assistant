@@ -33,6 +33,10 @@ from flask import Flask, request, jsonify, render_template
 # team_a_nlp track (Team A). See nlp_enrichment.py for credit.
 from nlp_enrichment import enrich
 
+# Service routing — which downstream agent handles the request + routing
+# slots. Reused from Team B's routing module. See team_b_routing.py.
+from team_b_routing import route_intent
+
 try:
     import google.generativeai as genai
     GENAI_AVAILABLE = True
@@ -671,8 +675,49 @@ def make_classifier() -> BaseClassifier:
     return KeywordClassifier()
 
 
+# ═══════════════════════════════════════════════════════════════════
+# DZONGKHA TRANSLATION
+#   When Team A's detector flags a Dzongkha message, we answer in
+#   Dzongkha and show the English in parentheses. Translation uses the
+#   Gemini model; without an API key it gracefully stays English-only.
+# ═══════════════════════════════════════════════════════════════════
+class GeminiTranslator:
+    def __init__(self, api_key: str, model_name: str = GEMINI_MODEL_NAME):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model_name)
+
+    def to_dzongkha(self, text: str) -> Optional[str]:
+        prompt = (
+            "Translate the following English text into Dzongkha (རྫོང་ཁ), "
+            "Bhutan's national language. Preserve line breaks, bullet points, "
+            "phone numbers, and reference codes exactly. Return ONLY the "
+            "Dzongkha translation — no English, no transliteration, no notes.\n\n"
+            f"{text}"
+        )
+        try:
+            resp = self.model.generate_content(prompt)
+            out = (resp.text or "").strip()
+            return out or None
+        except Exception as e:
+            print(f"[translate error: {type(e).__name__}: {e}]")
+            return None
+
+
+def make_translator() -> Optional[GeminiTranslator]:
+    if GENAI_AVAILABLE and GEMINI_API_KEY:
+        try:
+            print("[startup] Dzongkha translation enabled (Gemini).")
+            return GeminiTranslator(api_key=GEMINI_API_KEY)
+        except Exception as e:
+            print(f"[startup] Translator init failed: {e}; Dzongkha replies disabled.")
+    else:
+        print("[startup] No API key — Dzongkha replies disabled (English only).")
+    return None
+
+
 # Build once on startup so the model client is reused across requests
 CLASSIFIER = make_classifier()
+TRANSLATOR = make_translator()
 ENGINE     = ConversationEngine()
 
 
@@ -695,8 +740,19 @@ def chat():
     # and pull out structured entities (CID, plot ID, year, doc type).
     enrichment = enrich(user_text)
 
+    # Routing pass (team_b): which downstream agent handles this + slots.
+    routing = route_intent(user_text)
+
+    # If the citizen wrote in Dzongkha, answer in Dzongkha with the English
+    # translation in parentheses underneath (English-only if translation off).
+    bot_text = response.bot_text
+    if enrichment["language"] == "dz" and TRANSLATOR is not None:
+        dzongkha = TRANSLATOR.to_dzongkha(bot_text)
+        if dzongkha:
+            bot_text = f"{dzongkha}\n\n({bot_text})"
+
     return jsonify({
-        "bot_text":    response.bot_text,
+        "bot_text":    bot_text,
         "sources":     response.sources,
         "step_label":  response.step_label,
         "fallback_id": response.fallback_id,
@@ -707,6 +763,7 @@ def chat():
         },
         "language":    enrichment["language"],
         "entities":    enrichment["entities"],
+        "routing":     routing,
         "classifier_kind": type(CLASSIFIER).__name__,
     })
 

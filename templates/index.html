@@ -564,7 +564,7 @@
 
       <div class="side-card dev-card">
         <h3>Developer view</h3>
-        <p>Turn on dev mode to see the full pipeline per message: the Gemini classifier (scope, safety, request type, service) plus Team A's bilingual language detection and entity extraction.</p>
+        <p>Turn on dev mode to see the full pipeline per message: the Gemini classifier (scope, safety, request type, service), Team A's bilingual language detection and entity extraction, and Team B's service routing (which agent handles it).</p>
         <div class="toggle-inline">
           <label>Show classifications</label>
           <div class="switch" id="devSwitch2" role="switch" aria-checked="false" tabindex="0"></div>
@@ -658,14 +658,14 @@
       messagesEl.appendChild(wrap);
 
       // Always build the classification card; show/hide based on devMode
-      const clf = buildClassificationCard(data.classification, data.classifier_kind, data.language, data.entities);
+      const clf = buildClassificationCard(data.classification, data.classifier_kind, data.language, data.entities, data.routing);
       clf.style.display = devMode ? 'block' : 'none';
       messagesEl.appendChild(clf);
 
       scrollDown();
     }
 
-    function buildClassificationCard(c, classifierKind, language, entities) {
+    function buildClassificationCard(c, classifierKind, language, entities, routing) {
       const dims = [
         ['In-scope',     c.in_scope],
         ['Safety',       c.safety],
@@ -693,6 +693,16 @@
             `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
         : '<span class="clf-entity clf-entity-none">none detected</span>';
 
+      // Service routing (team_b): which downstream agent + routing slots.
+      const r = routing || {};
+      const rAgent  = r.agent  || '—';
+      const rIntent = r.intent || '—';
+      const rConf   = (typeof r.confidence === 'number') ? ` · ${(r.confidence * 100).toFixed(0)}%` : '';
+      const slotList = r.slots && Object.keys(r.slots).length
+        ? Object.entries(r.slots).map(([k, val]) =>
+            `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
+        : '<span class="clf-entity clf-entity-none">none</span>';
+
       const card = document.createElement('div');
       card.className = 'clf-card';
       card.innerHTML = `
@@ -709,6 +719,22 @@
         <div class="clf-row clf-enrich">
           <span class="clf-dim">Entities</span>
           <span class="clf-entities">${entityList}</span>
+        </div>
+        <div class="clf-subhead">
+          Service routing · <span class="clf-track">team_b</span>
+          <span class="clf-credit">intent → agent hand-off + slot extraction · Team B</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Routes to</span>
+          <span class="clf-label">${escapeHtml(rAgent)}</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Intent</span>
+          <span class="clf-label">${escapeHtml(rIntent)}${rConf}</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Slots</span>
+          <span class="clf-entities">${slotList}</span>
         </div>
       `;
       return card;
