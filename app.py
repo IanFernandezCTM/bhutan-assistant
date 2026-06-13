@@ -29,6 +29,10 @@ from typing import Dict, List, Optional, Tuple
 
 from flask import Flask, request, jsonify, render_template
 
+# Bilingual language detection + entity extraction, reused from the
+# team_a_nlp track (ghimire lokraj). See nlp_enrichment.py for credit.
+from nlp_enrichment import enrich
+
 try:
     import google.generativeai as genai
     GENAI_AVAILABLE = True
@@ -687,6 +691,10 @@ def chat():
     classification = CLASSIFIER.classify(user_text)
     response       = ENGINE.process(user_text, classification)
 
+    # Enrichment pass (team_a_nlp / ghimire lokraj): detect Dzongkha vs.
+    # English and pull out structured entities (CID, plot ID, year, doc type).
+    enrichment = enrich(user_text)
+
     return jsonify({
         "bot_text":    response.bot_text,
         "sources":     response.sources,
@@ -697,6 +705,8 @@ def chat():
             k: {"label": v.label, "confidence": v.confidence}
             for k, v in classification.items()
         },
+        "language":    enrichment["language"],
+        "entities":    enrichment["entities"],
         "classifier_kind": type(CLASSIFIER).__name__,
     })
 

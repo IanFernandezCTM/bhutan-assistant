@@ -303,6 +303,17 @@
       background: linear-gradient(90deg, var(--purple), var(--accent));
       border-radius: 2px;
     }
+    /* NLP enrichment rows (team_a_nlp / lokraj) */
+    .clf-row.clf-enrich { grid-template-columns: 110px 1fr; }
+    .clf-entities { display: flex; flex-wrap: wrap; gap: 6px; }
+    .clf-entity {
+      background: #F2F0FB;
+      color: var(--purple-deep);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+    .clf-entity-none { background: transparent; color: var(--muted); padding-left: 0; }
 
     /* ─── Composer ─── */
     .composer {
@@ -603,14 +614,14 @@
       messagesEl.appendChild(wrap);
 
       // Always build the classification card; show/hide based on devMode
-      const clf = buildClassificationCard(data.classification, data.classifier_kind);
+      const clf = buildClassificationCard(data.classification, data.classifier_kind, data.language, data.entities);
       clf.style.display = devMode ? 'block' : 'none';
       messagesEl.appendChild(clf);
 
       scrollDown();
     }
 
-    function buildClassificationCard(c, classifierKind) {
+    function buildClassificationCard(c, classifierKind, language, entities) {
       const dims = [
         ['In-scope',     c.in_scope],
         ['Safety',       c.safety],
@@ -631,11 +642,26 @@
         </div>
       `).join('');
 
+      // NLP enrichment (team_a_nlp / lokraj): language + extracted entities.
+      const langName = language === 'dz' ? 'Dzongkha (རྫོང་ཁ)' : 'English';
+      const entityList = entities && Object.keys(entities).length
+        ? Object.entries(entities).map(([k, val]) =>
+            `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
+        : '<span class="clf-entity clf-entity-none">none detected</span>';
+
       const card = document.createElement('div');
       card.className = 'clf-card';
       card.innerHTML = `
         <h4>Classifier · ${escapeHtml(classifierKind || 'Unknown')}</h4>
         ${rows}
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Language</span>
+          <span class="clf-label">${escapeHtml(langName)}</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Entities</span>
+          <span class="clf-entities">${entityList}</span>
+        </div>
       `;
       return card;
     }

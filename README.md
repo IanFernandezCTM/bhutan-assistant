@@ -5,6 +5,23 @@ Voice-first AI assistant for Bhutan public services, built by Omdena Sprint Team
 - **Backend**: Flask + Gemini classifier + conversation engine + knowledge base
 - **Frontend**: Single-page chat UI styled to match the Omdena visual brand
 - **Dev mode**: Toggle in the header reveals per-message classification (in-scope / safety / request type / service) with confidence scores
+- **NLP enrichment**: Bilingual (English / Dzongkha) language detection + structured entity extraction (CID, plot ID, tax year, document type) — see Credits
+
+---
+
+## Credits — NLP enrichment
+
+The `language` and `entities` fields on every `/api/chat` response come from
+[`nlp_enrichment.py`](nlp_enrichment.py), adapted from the **Team A NLP track**:
+
+- **ghimire lokraj** — bilingual `IntentClassifier` (Dzongkha Unicode detection +
+  entity extraction) and the keyword RAG retriever, in `team_a_nlp/`.
+- **Vaibhavi** — the Ollama + Supabase pgvector RAG **ingestion pipeline**
+  (`team_a_nlp/ingestion_pipeline.py`, `supabase_client.py`), the production path
+  for vector-DB retrieval (Tier 2 on this prototype's roadmap).
+
+The enrichment layer is dependency-free (regex only), so it adds nothing to
+`requirements.txt` and runs on the Render free tier.
 
 ---
 
