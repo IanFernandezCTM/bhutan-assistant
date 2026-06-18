@@ -1,0 +1,33 @@
+BHUTAN CIVIL REGISTRY & IDENTITY SYSTEM GUIDELINES
+==================================================
+
+1. CITIZEN IDENTITY CARD (CID) ISSUANCE
+Every Bhutanese citizen who reaches the age of 15 is eligible for a Citizenship Identity Card (CID).
+- To apply for a CID:
+  * Submit birth certificate or census registration record.
+  * Submit recommendation letter from local Gup (head of village block).
+  * Bring parents' CID copies for verification.
+  * Apply online via the DCRC (Department of Civil Registration and Census) portal or in-person at the Dzongkhag head office.
+- Card Validity:
+  * A standard CID is valid for 10 years, after which it must be renewed for a fee of Nu. 100.
+  * Replacement of lost or damaged CID cards incurs a replacement fee of Nu. 500.
+
+2. BIRTH REGISTRATION POLICY
+Every child born to a Bhutanese parent must be registered in the Civil Census Registry within 30 days of birth.
+- If born in a hospital: The hospital issues a Birth Notification.
+- If born at home: Gup verification is required.
+- Registration document required: Copy of parents' CID cards, Marriage Certificate (if applicable), and Birth Notification.
+- Penalty for late registration (after 30 days): Nu. 100.
+
+3. MARRIAGE CERTIFICATE (MC) ACQUISITION
+To obtain an official Marriage Certificate (MC) in Bhutan:
+- Both parties must be 18 years or older.
+- Submit application to the Royal Court of Justice (Dzongkhag Court).
+- Required: Census clearance, CID copies, and presence of two adult witnesses (who must possess valid CIDs).
+- Nu. 500 court registration fee.
+
+4. DZONGKHA TRANSLATION HELPER (མི་རྩིས་)
+- Census / Civil Registry: Mitsis (མི་རྩིས་)
+- Identity Card: Lagkhyer (ལག་ཁྱེར་)
+- Birth Date: Kyes-tshes (སྐྱེས་ཚེས་)
+- Marriage: Nyen-jyor (གཉེན་སྦྱོར་)

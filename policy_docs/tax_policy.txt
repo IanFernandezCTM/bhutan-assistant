@@ -1,0 +1,27 @@
+BHUTAN PERSONAL INCOME TAX (PIT) REGULATIONS
+===========================================
+
+1. WHO MUST FILE TAXES IN BHUTAN?
+All Bhutanese citizens and residents whose annual net taxable income exceeds Nu. 300,000 are required to file Personal Income Tax (PIT).
+
+2. TAX SLABS AND RATES
+Personal Income Tax is calculated progressively based on annual income:
+- Income up to Nu. 300,000: 0% (Exempt)
+- Nu. 300,001 to Nu. 650,000: 10% of the amount exceeding Nu. 300,000
+- Nu. 650,001 to Nu. 1,000,000: Nu. 35,000 + 15% of the amount exceeding Nu. 650,000
+- Nu. 1,000,001 to Nu. 1,500,000: Nu. 87,500 + 20% of the amount exceeding Nu. 1,000,000
+- Income exceeding Nu. 1,500,000: Nu. 187,500 + 25% of the amount exceeding Nu. 1,500,000
+- Surcharge: A 10% surcharge is levied on the total tax liability if the net taxable income exceeds Nu. 1,000,000.
+
+3. FILING DEADLINE & PENALTIES
+- Filing Period: The tax filing window is open from January 1st to March 31st of every calendar year for the preceding tax year (income earned from Jan 1 - Dec 31).
+- Late Filing Penalty: Nu. 100 per day of delay.
+- Late Payment Interest: Interest at the rate of 24% per annum is charged on the outstanding tax amount from the date it becomes due.
+
+4. PAYMENT METHODS
+Taxes must be filed and paid online via the RAMIS (Revenue Administration Management Information System) portal. Mobile banking apps (mBoB, mPay) are supported.
+
+5. DZONGKHA TRANSLATION HELPER (ཁྲལ་སྤྲོད་)
+- Personal Income Tax: PIT (མི་སྒེར་ཁྲལ་)
+- Tax Payment: Threl-troe (ཁྲལ་སྤྲོད་)
+- RAMIS portal: RAMIS (དངུལ་རྩིས་ལམ་ལུགས་)

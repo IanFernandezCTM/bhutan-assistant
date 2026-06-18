@@ -1,3 +1,6 @@
 flask==3.0.3
 google-generativeai==0.8.3
 gunicorn==22.0.0
+# Phase-3 integration: validate the canonical nlp_intent_schema_v2 payload.
+# Pure-Python, Render-free-tier safe. If absent, intent_schema.validate() no-ops.
+jsonschema==4.23.0

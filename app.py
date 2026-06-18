@@ -23,19 +23,25 @@
 
 import os
 import json
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, g
 
 # Bilingual language detection + entity extraction, reused from the
 # team_a_nlp track (Team A). See nlp_enrichment.py for credit.
 from nlp_enrichment import enrich
 
-# Service routing — which downstream agent handles the request + routing
-# slots. Reused from Team B's routing module. See team_b_routing.py.
-from team_b_routing import route_intent
+# Phase-3 integration layers (see INTEGRATION_PLAN.md). Each prefers a REAL
+# team component when present and falls back safely so the app stays
+# deployable on the Render free tier with zero API keys.
+import rag                 # RAG retrieval over real policy docs (Team A NLP), flag-controlled
+import intent_schema       # 4-dim → canonical nlp_intent_schema_v2 (Team D)
+import routing_adapter     # real Team B router / LangGraph agent, regex fallback
+import asr_adapter         # Team C voice-input adapter (+ fixtures)
+import obs                 # structured JSON logging + trace_id (Team D schema)
 
 try:
     import google.generativeai as genai
@@ -49,6 +55,11 @@ except ImportError:
 # ═══════════════════════════════════════════════════════════════════
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+
+# Integration feature flags (all default to the safe/offline behaviour;
+# see INTEGRATION_PLAN.md). RAG_BACKEND is also read inside rag.py.
+RAG_BACKEND           = os.environ.get("RAG_BACKEND", "kb").strip().lower()
+EMIT_CANONICAL_INTENT = os.environ.get("EMIT_CANONICAL_INTENT", "1").strip().lower() in ("1", "true", "yes")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -581,6 +592,7 @@ class TurnResponse:
     step_label: str = ""
     fallback_id: Optional[str] = None
     ref_no: str = ""
+    rag_backend: str = "kb"   # which retrieval backend produced the body
 
 
 class ConversationEngine:
@@ -602,7 +614,7 @@ class ConversationEngine:
     # Tier 2 expands the KB.
     SERVICES_WITH_KB = {"permits", "health", "business"}
 
-    def process(self, user_text, classification):
+    def process(self, user_text, classification, rag_result=None):
         ref = f"REF-{uuid.uuid4().hex[:8].upper()}"
 
         # ── Out-of-scope ──
@@ -611,7 +623,7 @@ class ConversationEngine:
                 bot_text=("I can help only with the public services in this assistant. "
                           "I can still help you find the right office, start again, "
                           "or talk to a person."),
-                sources=[], fallback_id="FB-03", ref_no=ref,
+                sources=[], fallback_id="FB-03", ref_no=ref, rag_backend="n/a",
             )
 
         # ── Unsafe (medical / legal / financial advice) ──
@@ -621,14 +633,21 @@ class ConversationEngine:
                           "able to give medical, legal, or financial advice. "
                           "For personal guidance, please visit the relevant office or "
                           "call the helpline (Health: 112, General helpline: 17)."),
-                sources=[], fallback_id=None, ref_no=ref,
+                sources=[], fallback_id=None, ref_no=ref, rag_backend="n/a",
             )
 
         # ── Service routing ──
         service = classification["service"].label
         intro = self.SERVICE_INTROS.get(service, self.SERVICE_INTROS["general"])
 
-        if service in self.SERVICES_WITH_KB:
+        # Prefer real-document RAG retrieval when it produced grounded chunks
+        # (rag.py, flag RAG_BACKEND); otherwise fall back to the in-memory KB,
+        # then to the "being added" placeholder for not-yet-covered services.
+        if rag_result is not None and getattr(rag_result, "served", False) and rag_result.chunks:
+            body = "\n\n".join(c.text for c in rag_result.chunks)
+            sources = [c.source for c in rag_result.chunks]
+            rag_backend = rag_result.backend
+        elif service in self.SERVICES_WITH_KB:
             chunks = search_kb(user_text, service=service, top_k=2)
             if chunks:
                 body = "\n\n".join(c.text for c in chunks)
@@ -637,6 +656,7 @@ class ConversationEngine:
                 body = (f"I don't have detailed information for this exact request. "
                         f"Please visit the relevant dzongkhag office. Reference: {ref}")
                 sources = []
+            rag_backend = "kb"
         else:
             # New services (ndi, civil_registration, education, taxes) —
             # classifier now recognises them but KB content is Tier 2 work.
@@ -645,12 +665,14 @@ class ConversationEngine:
                     f"In the meantime, please call the general helpline at 17 or visit "
                     f"www.gov.bt. Reference: {ref}")
             sources = []
+            rag_backend = "kb(none)"
 
         bot_text = f"{intro}\n\n{body}\n\nIs there anything else I can help you with?"
 
         return TurnResponse(
             bot_text=bot_text, sources=sources,
             step_label="Step 3 of 4", fallback_id=None, ref_no=ref,
+            rag_backend=rag_backend,
         )
 
 
@@ -720,38 +742,138 @@ CLASSIFIER = make_classifier()
 TRANSLATOR = make_translator()
 ENGINE     = ConversationEngine()
 
+# Structured JSON logging + per-request trace_id (Team D schema). Registers
+# Flask before/after_request hooks that mint/accept and echo X-Trace-ID.
+obs.init_app(app)
+print(f"[startup] RAG_BACKEND={RAG_BACKEND} · EMIT_CANONICAL_INTENT={EMIT_CANONICAL_INTENT} · "
+      f"logging={obs.backend_name()} · team_b_rule_router={routing_adapter.TEAM_B_RULE_AVAILABLE} · "
+      f"team_a_nlp_rag={rag.UPSTREAM_AVAILABLE}")
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    payload   = request.get_json(silent=True) or {}
-    user_text = (payload.get("message") or "").strip()
-    if not user_text:
-        return jsonify({"error": "empty message"}), 400
+def _status_for_rag(backend: str) -> str:
+    if backend.startswith("docs[team_a_nlp]"):
+        return "real(team_a_nlp)"
+    if backend.startswith("docs"):
+        return "real(vendored policy docs)"
+    if backend.startswith("supabase"):
+        return "stub(supabase ingest-only)"
+    if backend.startswith("kb"):
+        return "fallback(in-memory KB)"
+    return backend
 
+
+def _status_for_route(backend: str) -> str:
+    if backend.startswith("agent[team_b]"):
+        return "real(Team B LangGraph agent)"
+    if backend.startswith("rule[team_b]"):
+        return "real(Team B rule router)"
+    return "fallback(inline regex copy)"
+
+
+def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None) -> Dict:
+    """The full per-turn pipeline, shared by /api/chat and /api/voice.
+
+    classify → enrich → RAG → route → canonical-intent → (Dzongkha) → respond,
+    with trace_id carried through every stage and a `pipeline` report describing
+    which real component (vs. fallback/stub) handled each stage.
+    """
+    t0 = time.time()
+    obs.log_event("INFO", "chat.received",
+                  f"input received via {'voice' if asr_meta else 'text'}",
+                  trace_id, chars=len(user_text), via="voice" if asr_meta else "text")
+
+    # 1) classify (Gemini CoT, or keyword fallback with no key)
     classification = CLASSIFIER.classify(user_text)
-    response       = ENGINE.process(user_text, classification)
+    classifier_kind = type(CLASSIFIER).__name__
 
-    # Enrichment pass (team_a_nlp / Team A): detect Dzongkha vs. English
-    # and pull out structured entities (CID, plot ID, year, doc type).
+    # 2) enrich — Team A NLP: language detect + entity extraction
     enrichment = enrich(user_text)
+    language = enrichment["language"]
+    entities = enrichment["entities"]
 
-    # Routing pass (team_b): which downstream agent handles this + slots.
-    routing = route_intent(user_text)
+    # 3) RAG retrieval (flag RAG_BACKEND); KB fallback handled in the engine
+    service = classification["service"].label
+    rag_result = None
+    if RAG_BACKEND != "kb":
+        try:
+            rag_result = rag.retrieve(user_text, service=service, language=language)
+        except Exception as exc:
+            obs.log_event("WARN", "rag.error", f"RAG failed: {type(exc).__name__}", trace_id)
 
-    # If the citizen wrote in Dzongkha, answer in Dzongkha with the English
-    # translation in parentheses underneath (English-only if translation off).
+    response = ENGINE.process(user_text, classification, rag_result=rag_result)
+
+    # 4) routing — real Team B router/agent if available, else inline fallback
+    route_res = routing_adapter.route(user_text, trace_id)
+    routing = route_res.routing
+
+    # 5) canonical intent schema (Team D) — map 4 dims → v2 + validate
+    canonical = None
+    schema_status: Dict = {"emitted": False}
+    if EMIT_CANONICAL_INTENT:
+        canonical = intent_schema.to_canonical_payload(
+            user_text=user_text, language=language, classification=classification,
+            classifier_kind=classifier_kind, entities=entities, routing=routing,
+            trace_id=trace_id, latency_ms=int((time.time() - t0) * 1000),
+        )
+        ok_ext, _ = intent_schema.validate(canonical)
+        ok_strict, err_strict = intent_schema.validate(canonical, strict_canonical=True)
+        schema_status = {
+            "emitted": True,
+            "canonical_intent": canonical["classification"]["intent"],
+            "extended_valid": ok_ext,
+            "strict_canonical_valid": ok_strict,
+            "strict_canonical_note": err_strict,
+        }
+
+    obs.log_event("INFO", "route.decided",
+                  f"routed to {routing.get('agent')} via {route_res.backend}", trace_id,
+                  intent=routing.get("intent"), agent=routing.get("agent"),
+                  rag_backend=response.rag_backend, routing_backend=route_res.backend)
+
+    # 6) Dzongkha reply (Gemini translation; English-only without a key)
     bot_text = response.bot_text
-    if enrichment["language"] == "dz" and TRANSLATOR is not None:
+    translated = False
+    if language == "dz" and TRANSLATOR is not None:
         dzongkha = TRANSLATOR.to_dzongkha(bot_text)
         if dzongkha:
             bot_text = f"{dzongkha}\n\n({bot_text})"
+            translated = True
 
-    return jsonify({
+    pipeline = {
+        "trace_id": trace_id,
+        "classify": {"component": classifier_kind,
+                     "status": "real(Gemini CoT)" if classifier_kind == "GeminiClassifier"
+                               else "fallback(keyword)"},
+        "enrich":   {"component": "nlp_enrichment (Team A NLP)", "status": "real"},
+        "rag":      {"component": response.rag_backend,
+                     "status": _status_for_rag(response.rag_backend),
+                     "detail": getattr(rag_result, "detail", "") if rag_result else "RAG_BACKEND=kb"},
+        "route":    {"component": route_res.backend, "status": _status_for_route(route_res.backend),
+                     "detail": route_res.detail},
+        "schema":   {"component": "nlp_intent_schema_v2 (Team D)", **schema_status},
+        "translate": {"component": "GeminiTranslator", "applied": translated,
+                      "status": "real" if translated else ("off(no key)" if TRANSLATOR is None else "n/a")},
+        "logging":  {"component": obs.backend_name(),
+                     "status": "real(Team D)" if obs.TEAM_D_LOGGING_AVAILABLE
+                               else "fallback(team-d schema)"},
+    }
+    if asr_meta:
+        pipeline["asr"] = {"component": "asr_adapter (Team C contract)",
+                           "status": "client" if asr_meta.get("source") == "client"
+                                     else "stub(fixture)",
+                           "confidence": asr_meta.get("confidence"),
+                           "language": asr_meta.get("language")}
+
+    obs.log_event("INFO", "chat.completed", "turn complete", trace_id,
+                  latency_ms=int((time.time() - t0) * 1000), service=service,
+                  language=language, classifier=classifier_kind)
+
+    result = {
         "bot_text":    bot_text,
         "sources":     response.sources,
         "step_label":  response.step_label,
@@ -761,16 +883,63 @@ def chat():
             k: {"label": v.label, "confidence": v.confidence}
             for k, v in classification.items()
         },
-        "language":    enrichment["language"],
-        "entities":    enrichment["entities"],
+        "language":    language,
+        "entities":    entities,
         "routing":     routing,
-        "classifier_kind": type(CLASSIFIER).__name__,
-    })
+        "classifier_kind": classifier_kind,
+        "trace_id":    trace_id,
+        "pipeline":    pipeline,
+        "canonical_intent": canonical,
+    }
+    if asr_meta:
+        result["asr"] = asr_meta
+    return result
+
+
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    payload   = request.get_json(silent=True) or {}
+    user_text = (payload.get("message") or "").strip()
+    if not user_text:
+        return jsonify({"error": "empty message"}), 400
+    return jsonify(run_pipeline(user_text, g.trace_id))
+
+
+@app.route("/api/voice", methods=["POST"])
+def voice():
+    """Team C voice-input entry point: accepts a transcription (text + confidence
+    + language) OR a named fixture_id, then drives the SAME pipeline as /api/chat."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        asr = asr_adapter.transcribe(
+            transcript=payload.get("transcript"),
+            confidence=payload.get("confidence"),
+            language=payload.get("language"),
+            fixture_id=payload.get("fixture_id"),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc), "fixtures": asr_adapter.list_fixtures()}), 400
+    obs.log_event("INFO", "asr.transcribed", "voice input resolved", g.trace_id,
+                  source=asr.source, confidence=asr.confidence, language=asr.language)
+    return jsonify(run_pipeline(asr.transcript, g.trace_id, asr_meta=asr.to_dict()))
 
 
 @app.route("/healthz")
 def healthz():
-    return {"ok": True, "classifier": type(CLASSIFIER).__name__}
+    return {
+        "ok": True,
+        "classifier": type(CLASSIFIER).__name__,
+        "flags": {
+            "RAG_BACKEND": RAG_BACKEND,
+            "EMIT_CANONICAL_INTENT": EMIT_CANONICAL_INTENT,
+            "USE_TEAM_B_AGENT": os.environ.get("USE_TEAM_B_AGENT", "0"),
+        },
+        "backends": {
+            "logging": obs.backend_name(),
+            "team_b_rule_router": routing_adapter.TEAM_B_RULE_AVAILABLE,
+            "team_a_nlp_rag": rag.UPSTREAM_AVAILABLE,
+        },
+    }
 
 
 if __name__ == "__main__":

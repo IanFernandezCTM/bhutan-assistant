@@ -1,0 +1,330 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bhutan-voice-first/schemas/nlp_intent_schema_v2.json",
+  "title": "NLP Intent Classification Response Schema v2",
+  "description": "Multi-model contract between Team A's NLP classifier and Team D's API integration layer. Supports NLLB-200 (seq2seq translation + classification) and XLM-R (encoder-only cross-lingual classification) model families. Version 2 — Sprint 2+.",
+  "version": "2.0.0",
+  "type": "object",
+  "required": ["request_id", "input", "classification", "metadata"],
+  "additionalProperties": false,
+
+  "definitions": {
+    "intent_label": {
+      "type": "string",
+      "enum": ["INFO", "NAV", "TRANS", "CLARIF", "ESCL"],
+      "description": "Canonical intent labels. INFO=information request, NAV=navigation/find, TRANS=transaction/update, CLARIF=clarification, ESCL=escalation."
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Softmax probability for a given intent class."
+    },
+    "nllb_language_code": {
+      "type": "string",
+      "enum": ["eng_Latn", "dzo_Tibt"],
+      "description": "NLLB-200 language token format. 'dzo_Tibt' is canonical for Dzongkha. NOTE: 'dzg_Tibt' is incorrect — do not use."
+    },
+    "xlmr_language_code": {
+      "type": "string",
+      "enum": ["en", "dz"],
+      "description": "XLM-R ISO 639-1 language code. 'en'=English, 'dz'=Dzongkha."
+    }
+  },
+
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "UUID v4 assigned by the API gateway per inference request.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "examples": ["3f6a1b2c-84d5-4e7f-a1b0-9c2d3e4f5678"]
+    },
+
+    "input": {
+      "type": "object",
+      "description": "The user query as received by the classifier.",
+      "required": ["text", "language"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Raw user query string (English or Dzongkha)."
+        },
+        "language": {
+          "description": "Language code. Format depends on model_family: NLLB-200 uses NLLB tokens (eng_Latn/dzo_Tibt); XLM-R uses ISO 639-1 codes (en/dz).",
+          "oneOf": [
+            { "$ref": "#/definitions/nllb_language_code" },
+            { "$ref": "#/definitions/xlmr_language_code" }
+          ]
+        }
+      }
+    },
+
+    "classification": {
+      "type": "object",
+      "description": "Primary intent classification result.",
+      "required": ["intent", "confidence", "scores"],
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "$ref": "#/definitions/intent_label",
+          "description": "Argmax predicted intent."
+        },
+        "confidence": {
+          "$ref": "#/definitions/confidence_score",
+          "description": "Softmax probability of the predicted intent."
+        },
+        "scores": {
+          "type": "object",
+          "description": "Full softmax distribution over all intent classes.",
+          "required": ["INFO", "NAV", "TRANS", "CLARIF", "ESCL"],
+          "additionalProperties": false,
+          "properties": {
+            "INFO":   { "$ref": "#/definitions/confidence_score" },
+            "NAV":    { "$ref": "#/definitions/confidence_score" },
+            "TRANS":  { "$ref": "#/definitions/confidence_score" },
+            "CLARIF": { "$ref": "#/definitions/confidence_score" },
+            "ESCL":   { "$ref": "#/definitions/confidence_score" }
+          }
+        },
+        "low_confidence_flag": {
+          "type": "boolean",
+          "description": "True if top confidence < 0.60. Downstream systems should treat this as uncertain and may trigger fallback or escalation.",
+          "default": false
+        }
+      }
+    },
+
+    "translation": {
+      "type": ["object", "null"],
+      "description": "Optional. Present only when model_family is NLLB-200 and translation was performed (e.g. Dzongkha input normalized to English). Must be null for XLM-R responses.",
+      "additionalProperties": false,
+      "properties": {
+        "source_language": { "$ref": "#/definitions/nllb_language_code" },
+        "target_language": { "$ref": "#/definitions/nllb_language_code" },
+        "translated_text": {
+          "type": "string",
+          "description": "NLLB-200 generated translation of the input query."
+        },
+        "bertscore_f1": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Optional runtime BERTScore F1 if evaluation mode is enabled. Null in production."
+        }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "description": "Runtime and model provenance metadata.",
+      "required": ["model_family", "model_id", "schema_version", "timestamp_utc"],
+      "additionalProperties": false,
+      "properties": {
+        "model_family": {
+          "type": "string",
+          "enum": ["NLLB-200", "XLM-R"],
+          "description": "Model family used for inference. Determines valid model_id values and language code format."
+        },
+        "model_id": {
+          "type": "string",
+          "enum": [
+            "facebook/nllb-200-distilled-600M",
+            "xlm-roberta-base",
+            "xlm-roberta-large"
+          ],
+          "description": "HuggingFace model identifier. Must match the declared model_family."
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "2.0.0"
+        },
+        "timestamp_utc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 UTC timestamp of inference.",
+          "examples": ["2026-06-13T09:00:00Z"]
+        },
+        "inference_device": {
+          "type": "string",
+          "enum": ["cpu", "cuda"],
+          "description": "Device used for inference."
+        },
+        "latency_ms": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "End-to-end inference latency in milliseconds. Null if not instrumented."
+        }
+      }
+    }
+  },
+
+  "if": {
+    "properties": {
+      "metadata": {
+        "properties": {
+          "model_family": { "const": "NLLB-200" }
+        },
+        "required": ["model_family"]
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "input": {
+        "properties": {
+          "language": { "$ref": "#/definitions/nllb_language_code" }
+        }
+      },
+      "metadata": {
+        "properties": {
+          "model_id": {
+            "enum": ["facebook/nllb-200-distilled-600M"]
+          }
+        }
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "input": {
+        "properties": {
+          "language": { "$ref": "#/definitions/xlmr_language_code" }
+        }
+      },
+      "metadata": {
+        "properties": {
+          "model_id": {
+            "enum": ["xlm-roberta-base", "xlm-roberta-large"]
+          }
+        }
+      },
+      "translation": {
+        "type": "null",
+        "description": "XLM-R is encoder-only and does not produce translations. This field must be null."
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "request_id": "3f6a1b2c-84d5-4e7f-a1b0-9c2d3e4f5678",
+      "input": {
+        "text": "How do I register a new business in Thimphu?",
+        "language": "eng_Latn"
+      },
+      "classification": {
+        "intent": "INFO",
+        "confidence": 0.912,
+        "scores": {
+          "INFO": 0.912,
+          "NAV": 0.043,
+          "TRANS": 0.021,
+          "CLARIF": 0.014,
+          "ESCL": 0.010
+        },
+        "low_confidence_flag": false
+      },
+      "translation": null,
+      "metadata": {
+        "model_family": "NLLB-200",
+        "model_id": "facebook/nllb-200-distilled-600M",
+        "schema_version": "2.0.0",
+        "timestamp_utc": "2026-06-13T09:00:00Z",
+        "inference_device": "cpu",
+        "latency_ms": 142
+      }
+    },
+    {
+      "request_id": "7c9e2d4f-11a3-4b8c-b2e1-0d5f6a7b8c9d",
+      "input": {
+        "text": "གནམ་གཤིས་ད་ལྟ་ཇི་འདྲ་ཡོད།",
+        "language": "dzo_Tibt"
+      },
+      "classification": {
+        "intent": "INFO",
+        "confidence": 0.874,
+        "scores": {
+          "INFO": 0.874,
+          "NAV": 0.062,
+          "TRANS": 0.031,
+          "CLARIF": 0.022,
+          "ESCL": 0.011
+        },
+        "low_confidence_flag": false
+      },
+      "translation": {
+        "source_language": "dzo_Tibt",
+        "target_language": "eng_Latn",
+        "translated_text": "What is the weather like today?",
+        "bertscore_f1": null
+      },
+      "metadata": {
+        "model_family": "NLLB-200",
+        "model_id": "facebook/nllb-200-distilled-600M",
+        "schema_version": "2.0.0",
+        "timestamp_utc": "2026-06-13T09:01:22Z",
+        "inference_device": "cpu",
+        "latency_ms": 389
+      }
+    },
+    {
+      "request_id": "a1b2c3d4-22e5-4f6a-b3c2-1d2e3f4a5b6c",
+      "input": {
+        "text": "Where can I pay my electricity bill?",
+        "language": "en"
+      },
+      "classification": {
+        "intent": "NAV",
+        "confidence": 0.883,
+        "scores": {
+          "INFO": 0.062,
+          "NAV": 0.883,
+          "TRANS": 0.031,
+          "CLARIF": 0.015,
+          "ESCL": 0.009
+        },
+        "low_confidence_flag": false
+      },
+      "translation": null,
+      "metadata": {
+        "model_family": "XLM-R",
+        "model_id": "xlm-roberta-base",
+        "schema_version": "2.0.0",
+        "timestamp_utc": "2026-06-13T09:02:44Z",
+        "inference_device": "cpu",
+        "latency_ms": 98
+      }
+    },
+    {
+      "request_id": "b2c3d4e5-33f6-4a7b-c4d3-2e3f4a5b6c7d",
+      "input": {
+        "text": "གློག་རྩིས་གང་དུ་འབུལ་ཐུབ།",
+        "language": "dz"
+      },
+      "classification": {
+        "intent": "NAV",
+        "confidence": 0.791,
+        "scores": {
+          "INFO": 0.091,
+          "NAV": 0.791,
+          "TRANS": 0.058,
+          "CLARIF": 0.041,
+          "ESCL": 0.019
+        },
+        "low_confidence_flag": false
+      },
+      "translation": null,
+      "metadata": {
+        "model_family": "XLM-R",
+        "model_id": "xlm-roberta-large",
+        "schema_version": "2.0.0",
+        "timestamp_utc": "2026-06-13T09:03:10Z",
+        "inference_device": "cuda",
+        "latency_ms": 61
+      }
+    }
+  ]
+}

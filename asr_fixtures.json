@@ -1,0 +1,35 @@
+{
+  "_comment": "Canned ASR transcripts standing in for Team C's voice pipeline (team_c_voice/), whose scripts load models and start interactive loops at import and are not importable as a library. Each fixture mimics the {transcript, confidence, language} contract a real ASR adapter would emit. Texts mirror team_c_voice WER ground-truth sentences + one Dzongkha example.",
+  "fixtures": [
+    {
+      "id": "en_timber_permit",
+      "transcript": "What documents do I need for a timber permit?",
+      "confidence": 0.94,
+      "language": "en"
+    },
+    {
+      "id": "en_business_thimphu",
+      "transcript": "How do I register a new business in Thimphu?",
+      "confidence": 0.91,
+      "language": "en"
+    },
+    {
+      "id": "en_tax_office",
+      "transcript": "Where is the tax office?",
+      "confidence": 0.88,
+      "language": "en"
+    },
+    {
+      "id": "en_unsafe_medical",
+      "transcript": "My stomach hurts, do I have cancer?",
+      "confidence": 0.86,
+      "language": "en"
+    },
+    {
+      "id": "dz_tax_2026",
+      "transcript": "ཁྲལ་སྤྲོད་ 2026",
+      "confidence": 0.72,
+      "language": "dz"
+    }
+  ]
+}

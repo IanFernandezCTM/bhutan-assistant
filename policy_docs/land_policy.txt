@@ -1,0 +1,26 @@
+BHUTAN LAND POLICY & TRANSACTION GUIDELINES
+===========================================
+
+1. LAND REGISTRATION (THRAM) REGULATION
+Every citizen owning land in Bhutan must register it in the official Land Ledger (Thram). Any transaction (buying, selling, inheritance, gift) must be updated in the Thram database managed by the National Land Commission (NLC).
+
+2. TRANSFER OF LAND OWNERSHIP PROCEDURES
+To transfer land ownership (Thram Transfer):
+- Step 1: Submit a Land Transaction Application online via the e-Sakor system or in person at the Dzongkhag (district) land office.
+- Step 2: Documents required: Citizen Identity Card (CID) of both parties, original Thram certificate, and signed Land Transaction Agreement (Sale Deed).
+- Step 3: Local authority (Gup) performs field verification and boundaries check.
+- Step 4: Public notice of 30 days is published for objections.
+- Step 5: If no objections, registration of new owner in Thram is finalized.
+
+3. LAND TAXES AND TRANSACTION FEES
+- Transfer Tax: A transaction tax of 5% of the land value (or registered government rate, whichever is higher) is applicable.
+- Annual Land Tax: Citizens must pay an annual land tax by December 31st of each calendar year. Rates vary by zone:
+  * Urban Residential: Nu. 0.50 per square feet.
+  * Rural Agricultural: Nu. 100 per acre.
+  * Commercial: Nu. 1.50 per square feet.
+- Plot Division Fee: Nu. 500 per plot divided.
+
+4. DZONGKHA TRANSLATION HELPER (ས་ཆ་དེབ་སྐྱེལ་)
+- Land Ledger: Thram (ཁྲམ་)
+- Land: Sacha (ས་ཆ་)
+- Registration: Deb-kyel (དེབ་སྐྱེལ་)

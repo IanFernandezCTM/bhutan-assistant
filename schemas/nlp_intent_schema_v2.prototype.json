@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bhutan-voice-first/schemas/nlp_intent_schema_v2.prototype.json",
+  "title": "NLP Intent Classification Response Schema v2 — prototype extension",
+  "description": "Team A prototype's working copy of Team D's canonical nlp_intent_schema_v2.json. SAME contract (request_id, input, classification{INFO/NAV/TRANS/CLARIF/ESCL, scores, low_confidence_flag}, metadata), with two additive changes so the Gemini/keyword prototype can validate: (1) model_family adds 'PROTOTYPE' and model_id adds 'gemini-2.5-flash'/'keyword-baseline'; (2) an optional top-level 'extensions' object carries the prototype's 4-dimension labels, entities and routing (which canonical v2 forbids via additionalProperties:false). Upstream PR recommended in CROSS_TEAM_NOTES.md to widen the canonical enum. The model-family if/then/else conditionals from canonical v2 are intentionally omitted here.",
+  "version": "2.0.0-prototype",
+  "type": "object",
+  "required": ["request_id", "input", "classification", "metadata"],
+  "additionalProperties": false,
+
+  "definitions": {
+    "intent_label": {
+      "type": "string",
+      "enum": ["INFO", "NAV", "TRANS", "CLARIF", "ESCL"],
+      "description": "Canonical intent labels. INFO=information request, NAV=navigation/find, TRANS=transaction/update, CLARIF=clarification, ESCL=escalation."
+    },
+    "confidence_score": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "language_code": {
+      "type": "string",
+      "enum": ["eng_Latn", "dzo_Tibt", "en", "dz"],
+      "description": "NLLB tokens (eng_Latn/dzo_Tibt) or XLM-R ISO codes (en/dz). The prototype emits en/dz."
+    }
+  },
+
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "UUID v4 assigned per inference request.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "input": {
+      "type": "object",
+      "required": ["text", "language"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "language": { "$ref": "#/definitions/language_code" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "required": ["intent", "confidence", "scores"],
+      "additionalProperties": false,
+      "properties": {
+        "intent": { "$ref": "#/definitions/intent_label" },
+        "confidence": { "$ref": "#/definitions/confidence_score" },
+        "scores": {
+          "type": "object",
+          "required": ["INFO", "NAV", "TRANS", "CLARIF", "ESCL"],
+          "additionalProperties": false,
+          "properties": {
+            "INFO": { "$ref": "#/definitions/confidence_score" },
+            "NAV": { "$ref": "#/definitions/confidence_score" },
+            "TRANS": { "$ref": "#/definitions/confidence_score" },
+            "CLARIF": { "$ref": "#/definitions/confidence_score" },
+            "ESCL": { "$ref": "#/definitions/confidence_score" }
+          }
+        },
+        "low_confidence_flag": {
+          "type": "boolean",
+          "description": "True if top confidence < 0.60.",
+          "default": false
+        }
+      }
+    },
+    "translation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "source_language": { "$ref": "#/definitions/language_code" },
+        "target_language": { "$ref": "#/definitions/language_code" },
+        "translated_text": { "type": "string" },
+        "bertscore_f1": { "type": ["number", "null"], "minimum": 0.0, "maximum": 1.0 }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["model_family", "model_id", "schema_version", "timestamp_utc"],
+      "additionalProperties": false,
+      "properties": {
+        "model_family": {
+          "type": "string",
+          "enum": ["NLLB-200", "XLM-R", "PROTOTYPE"]
+        },
+        "model_id": {
+          "type": "string",
+          "enum": [
+            "facebook/nllb-200-distilled-600M",
+            "xlm-roberta-base",
+            "xlm-roberta-large",
+            "gemini-2.5-flash",
+            "keyword-baseline"
+          ]
+        },
+        "schema_version": { "type": "string", "const": "2.0.0" },
+        "timestamp_utc": { "type": "string", "format": "date-time" },
+        "inference_device": { "type": "string", "enum": ["cpu", "cuda"] },
+        "latency_ms": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "extensions": {
+      "type": ["object", "null"],
+      "description": "Prototype-only additive payload (NOT in canonical v2). Carries the 4-dimension labels, NLP entities, and routing so the rich pipeline survives the canonical contract.",
+      "properties": {
+        "dimensions": {
+          "type": "object",
+          "description": "The prototype's native 4-dimension classification.",
+          "properties": {
+            "in_scope": { "type": "object" },
+            "safety": { "type": "object" },
+            "request_type": { "type": "object" },
+            "service": { "type": "object" }
+          }
+        },
+        "entities": { "type": "object" },
+        "routing": { "type": "object" },
+        "trace_id": { "type": "string" }
+      }
+    }
+  }
+}

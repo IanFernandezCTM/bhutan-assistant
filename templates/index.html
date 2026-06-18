@@ -348,6 +348,31 @@
       font-family: 'JetBrains Mono', 'Menlo', monospace;
     }
     .clf-row.clf-enrich { grid-template-columns: 110px 1fr; }
+
+    /* ─── Pipeline panel (which real component handled each stage) ─── */
+    .pl-row {
+      display: grid;
+      grid-template-columns: 86px 1fr auto;
+      gap: 10px;
+      padding: 5px 0;
+      align-items: baseline;
+      border-top: 1px dashed var(--border);
+    }
+    .pl-stage { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+    .pl-comp  { color: var(--navy); font-weight: 500; word-break: break-word; }
+    .pl-comp .pl-detail { display: block; color: var(--muted); font-weight: 400; font-size: 10px; }
+    .pl-badge {
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+    }
+    .pl-badge.real     { color: var(--good); background: rgba(33,161,121,0.12); }
+    .pl-badge.fallback { color: var(--warn); background: rgba(217,119,87,0.12); }
+    .pl-badge.stub     { color: var(--bad);  background: rgba(192,57,43,0.10); }
+    .pl-badge.neutral  { color: var(--muted); background: rgba(128,137,168,0.12); }
+    .pl-traceid {
+      font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 10px;
+      color: var(--purple-deep); background: #F2F0FB; border-radius: 5px; padding: 1px 7px;
+    }
     .clf-entities { display: flex; flex-wrap: wrap; gap: 6px; }
     .clf-entity {
       background: #F2F0FB;
@@ -658,14 +683,59 @@
       messagesEl.appendChild(wrap);
 
       // Always build the classification card; show/hide based on devMode
-      const clf = buildClassificationCard(data.classification, data.classifier_kind, data.language, data.entities, data.routing);
+      const clf = buildClassificationCard(data);
       clf.style.display = devMode ? 'block' : 'none';
       messagesEl.appendChild(clf);
 
       scrollDown();
     }
 
-    function buildClassificationCard(c, classifierKind, language, entities, routing) {
+    function plBadgeClass(status) {
+      const s = (status || '').toLowerCase();
+      if (s.startsWith('real') || s === 'client' || s === 'valid') return 'real';
+      if (s.startsWith('fallback')) return 'fallback';
+      if (s.startsWith('stub') || s === 'invalid') return 'stub';
+      return 'neutral';
+    }
+
+    function buildPipelinePanel(data) {
+      const p = data.pipeline || {};
+      const order = [
+        ['asr', 'ASR'], ['classify', 'Classify'], ['enrich', 'Enrich'],
+        ['rag', 'Retrieve'], ['route', 'Route'], ['schema', 'Schema'],
+        ['translate', 'Translate'], ['logging', 'Logging'],
+      ];
+      const rows = order.filter(([k]) => p[k]).map(([k, label]) => {
+        const st = p[k];
+        let statusText, detail = st.detail || '';
+        if (k === 'schema') {
+          statusText = st.extended_valid ? 'valid' : 'invalid';
+          detail = `canonical=${st.canonical_intent || '—'} · strict v2 ${st.strict_canonical_valid ? 'pass' : 'diverges (additive ext.)'}`;
+        } else {
+          statusText = st.status || '';
+        }
+        return `
+          <div class="pl-row">
+            <span class="pl-stage">${escapeHtml(label)}</span>
+            <span class="pl-comp">${escapeHtml(st.component || '—')}${detail ? `<span class="pl-detail">${escapeHtml(detail)}</span>` : ''}</span>
+            <span class="pl-badge ${plBadgeClass(statusText)}">${escapeHtml(statusText)}</span>
+          </div>`;
+      }).join('');
+      const tid = data.trace_id ? `<span class="pl-traceid">${escapeHtml(data.trace_id)}</span>` : '';
+      return `
+        <div class="clf-subhead">
+          Pipeline · ${tid}
+          <span class="clf-credit">which real component (vs. fallback / stub) handled each stage — trace_id carried end-to-end</span>
+        </div>
+        ${rows}`;
+    }
+
+    function buildClassificationCard(data) {
+      const c = data.classification;
+      const classifierKind = data.classifier_kind;
+      const language = data.language;
+      const entities = data.entities;
+      const routing = data.routing;
       const dims = [
         ['In-scope',     c.in_scope],
         ['Safety',       c.safety],
@@ -706,7 +776,12 @@
       const card = document.createElement('div');
       card.className = 'clf-card';
       card.innerHTML = `
-        <h4>Classifier · ${escapeHtml(classifierKind || 'Unknown')}</h4>
+        <h4>Pipeline inspector · ${escapeHtml(classifierKind || 'Unknown')}</h4>
+        ${buildPipelinePanel(data)}
+        <div class="clf-subhead">
+          Classification · <span class="clf-track">4 dimensions</span>
+          <span class="clf-credit">in_scope / safety / request_type / service · Gemini CoT or keyword fallback</span>
+        </div>
         ${rows}
         <div class="clf-subhead">
           NLP enrichment · <span class="clf-track">team_a_nlp</span>
