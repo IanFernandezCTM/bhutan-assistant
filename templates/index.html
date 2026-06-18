@@ -373,6 +373,36 @@
       font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 10px;
       color: var(--purple-deep); background: #F2F0FB; border-radius: 5px; padding: 1px 7px;
     }
+    /* per-stage team credit tag */
+    .pl-team {
+      font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+      border-radius: 4px; padding: 1px 5px; margin-right: 6px; white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    .pl-team.tA { color: #4B3FB8; background: rgba(108,92,231,0.14); }   /* Team A */
+    .pl-team.tB { color: #14225A; background: rgba(20,34,90,0.10); }     /* Team B */
+    .pl-team.tC { color: #157A57; background: rgba(33,161,121,0.14); }   /* Team C */
+    .pl-team.tD { color: #B0561F; background: rgba(217,119,87,0.16); }   /* Team D */
+    /* four-team credits legend */
+    .clf-credits { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .clf-credits > span {
+      font-size: 10.5px; color: var(--navy);
+      font-family: 'JetBrains Mono', 'Menlo', monospace; line-height: 1.4;
+    }
+    .clf-credits .ct { font-weight: 700; font-family: 'Inter', sans-serif; }
+    .clf-credits .ct.tA { color: #4B3FB8; }
+    .clf-credits .ct.tB { color: #14225A; }
+    .clf-credits .ct.tC { color: #157A57; }
+    .clf-credits .ct.tD { color: #B0561F; }
+    /* mic button + voice user badge */
+    #micBtn { background: white; color: var(--purple-deep); border: 1px solid var(--border); }
+    #micBtn.listening { background: var(--bad); color: white; border-color: var(--bad); animation: pulse 1.1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .voice-badge {
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      color: #157A57; background: rgba(33,161,121,0.14); border-radius: 999px;
+      padding: 1px 8px; margin-bottom: 4px; display: inline-block;
+    }
     .clf-entities { display: flex; flex-wrap: wrap; gap: 6px; }
     .clf-entity {
       background: #F2F0FB;
@@ -566,6 +596,14 @@
           placeholder="Ask anything about public services…"
           autocomplete="off"
         />
+        <button id="micBtn" onclick="startVoice()" aria-label="Speak (voice input — Team C)" title="Voice input (Team C ASR)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
         <button id="sendBtn" onclick="sendMessage()" aria-label="Send">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
@@ -584,6 +622,16 @@
           <button onclick="sendPreset(this)">Register my land plot 905 — my CID is 11503002345</button>
           <button onclick="sendPreset(this)">How do I file my tax for 2026?</button>
           <button onclick="sendPreset(this)" lang="dz">ཁྲལ་སྤྲོད་ 2026</button>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <h3>Try by voice <span class="voice-badge">Team C</span></h3>
+        <p>Tap the mic to speak (browser ASR), or play a sample transcription through the voice pipeline. Turn on dev mode to see Team C's ASR row.</p>
+        <div class="quick-chips">
+          <button onclick="sendVoiceFixture('en_timber_permit')">🎤 “…timber permit?” (EN)</button>
+          <button onclick="sendVoiceFixture('en_business_thimphu')">🎤 “…register a business…” (EN)</button>
+          <button onclick="sendVoiceFixture('dz_tax_2026')" lang="dz">🎤 ཁྲལ་སྤྲོད་ 2026 (DZ)</button>
         </div>
       </div>
 
@@ -642,10 +690,13 @@
         .replace(/>/g, '&gt;');
     }
 
-    function addUserMessage(text) {
+    function addUserMessage(text, voiceMeta) {
       const div = document.createElement('div');
       div.className = 'msg user';
-      div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+      const badge = voiceMeta
+        ? `<div class="voice-badge">🎤 voice · ${escapeHtml(voiceMeta.language || 'en')} · ${Math.round((voiceMeta.confidence ?? 1) * 100)}% conf</div>`
+        : '';
+      div.innerHTML = `${badge}<div class="msg-bubble">${escapeHtml(text)}</div>`;
       messagesEl.appendChild(div);
       scrollDown();
     }
@@ -698,6 +749,12 @@
       return 'neutral';
     }
 
+    // Which team owns each pipeline stage (shown as a credit tag in dev mode).
+    const STAGE_TEAM = {
+      asr: 'C', classify: 'A', enrich: 'A', rag: 'A',
+      route: 'B', schema: 'D', translate: 'A', logging: 'D',
+    };
+
     function buildPipelinePanel(data) {
       const p = data.pipeline || {};
       const order = [
@@ -714,10 +771,11 @@
         } else {
           statusText = st.status || '';
         }
+        const team = STAGE_TEAM[k] || 'A';
         return `
           <div class="pl-row">
             <span class="pl-stage">${escapeHtml(label)}</span>
-            <span class="pl-comp">${escapeHtml(st.component || '—')}${detail ? `<span class="pl-detail">${escapeHtml(detail)}</span>` : ''}</span>
+            <span class="pl-comp"><span class="pl-team t${team}">Team ${team}</span>${escapeHtml(st.component || '—')}${detail ? `<span class="pl-detail">${escapeHtml(detail)}</span>` : ''}</span>
             <span class="pl-badge ${plBadgeClass(statusText)}">${escapeHtml(statusText)}</span>
           </div>`;
       }).join('');
@@ -773,6 +831,19 @@
             `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
         : '<span class="clf-entity clf-entity-none">none</span>';
 
+      // Team C (voice) + Team D (canonical schema + audit) credit data.
+      const asr = data.asr;
+      const sch = (data.pipeline && data.pipeline.schema) || {};
+      const log = (data.pipeline && data.pipeline.logging) || {};
+      const ci = data.canonical_intent;
+      const canonIntent = (ci && ci.classification) ? ci.classification.intent : '—';
+      const teamCVal = asr
+        ? `${asr.source} · ${asr.language || ''} · ${Math.round((asr.confidence ?? 1) * 100)}% conf`
+        : 'no voice this turn — tap the mic 🎤 or a voice sample';
+      const schemaVal = sch.emitted
+        ? `${canonIntent} · ${sch.extended_valid ? 'valid (extended)' : 'invalid'} · ${sch.strict_canonical_valid ? 'strict v2 pass' : 'strict v2 diverges'}`
+        : 'not emitted';
+
       const card = document.createElement('div');
       card.className = 'clf-card';
       card.innerHTML = `
@@ -810,6 +881,40 @@
         <div class="clf-row clf-enrich">
           <span class="clf-dim">Slots</span>
           <span class="clf-entities">${slotList}</span>
+        </div>
+        <div class="clf-subhead">
+          Voice I/O · <span class="clf-track">team_c</span>
+          <span class="clf-credit">ASR contract: transcript + confidence + language · Team C</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">ASR input</span>
+          <span class="clf-label">${escapeHtml(teamCVal)}</span>
+        </div>
+        <div class="clf-subhead">
+          Canonical intent + audit · <span class="clf-track">team_d</span>
+          <span class="clf-credit">nlp_intent_schema_v2 + structured trace_id logging · Team D</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Intent (v2)</span>
+          <span class="clf-label">${escapeHtml(canonIntent)}</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Schema</span>
+          <span class="clf-label">${escapeHtml(schemaVal)}</span>
+        </div>
+        <div class="clf-row clf-enrich">
+          <span class="clf-dim">Logging</span>
+          <span class="clf-label">${escapeHtml(log.component || '—')}</span>
+        </div>
+        <div class="clf-subhead">
+          Credits · <span class="clf-track">cross-team</span>
+          <span class="clf-credit">every stage above is one team's work</span>
+        </div>
+        <div class="clf-credits">
+          <span><span class="ct tA">Team A</span> — NLP: classification, language + entities, policy-doc RAG</span>
+          <span><span class="ct tB">Team B</span> — Agentic routing: intent → agent hand-off</span>
+          <span><span class="ct tC">Team C</span> — Voice I/O: ASR contract (transcript + confidence + language)</span>
+          <span><span class="ct tD">Team D</span> — Integration: canonical intent schema + trace_id logging</span>
         </div>
       `;
       return card;
@@ -854,6 +959,63 @@
     function sendPreset(btn) {
       inputEl.value = btn.textContent.trim();
       sendMessage();
+    }
+
+    // ─── Voice mode (Team C ASR contract → POST /api/voice → same pipeline) ───
+    function postVoice(payload, displayText, voiceMeta) {
+      addUserMessage(displayText, voiceMeta);
+      addTypingIndicator();
+      sendBtn.disabled = true;
+      fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(res => res.ok ? res.json() : Promise.reject(new Error('voice error')))
+        .then(data => { removeTypingIndicator(); addBotMessage(data); })
+        .catch(() => {
+          removeTypingIndicator();
+          const fail = document.createElement('div');
+          fail.className = 'msg bot warn';
+          fail.innerHTML = `<div class="msg-bubble">Sorry — the voice request failed. Please try again.</div>`;
+          messagesEl.appendChild(fail);
+          scrollDown();
+        })
+        .finally(() => { sendBtn.disabled = false; });
+    }
+
+    function sendVoiceFixture(id) {
+      // Play a canned Team C transcription through the voice pipeline.
+      postVoice({ fixture_id: id }, '(voice sample)', { language: id.startsWith('dz') ? 'dz' : 'en', confidence: 1 });
+    }
+
+    let recognizing = false;
+    function startVoice() {
+      const micBtn = document.getElementById('micBtn');
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        // No in-browser ASR (e.g. Firefox, or Dzongkha) → use a sample transcription.
+        sendVoiceFixture('en_timber_permit');
+        return;
+      }
+      if (recognizing) { return; }
+      const rec = new SR();
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      recognizing = true;
+      micBtn.classList.add('listening');
+      rec.onresult = (e) => {
+        const r = e.results[0][0];
+        const transcript = (r.transcript || '').trim();
+        const confidence = (typeof r.confidence === 'number' && r.confidence > 0) ? r.confidence : 0.9;
+        if (transcript) {
+          postVoice({ transcript, confidence, language: 'en' }, transcript, { language: 'en', confidence });
+        }
+      };
+      rec.onerror = () => {};   // silently allow retry / typing
+      rec.onend = () => { recognizing = false; micBtn.classList.remove('listening'); };
+      try { rec.start(); } catch (_) { recognizing = false; micBtn.classList.remove('listening'); }
     }
 
     function resetChat() {
