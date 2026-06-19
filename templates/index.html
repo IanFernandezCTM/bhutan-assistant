@@ -1003,7 +1003,20 @@
 
     let recognizing = false;
     let recognizer = null;
+    let silenceTimer = null;
     const DEFAULT_PLACEHOLDER = 'Ask anything about public services…';
+    // Auto-send a voice message after this many ms of silence (a "long enough pause").
+    const VOICE_SILENCE_MS = 1800;
+
+    function clearSilenceTimer() {
+      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+    }
+    // Every chunk of recognized speech restarts this countdown; when it lapses we
+    // stop recognition, which flushes the final result and posts one message.
+    function armSilenceTimer() {
+      clearSilenceTimer();
+      silenceTimer = setTimeout(() => stopVoice(), VOICE_SILENCE_MS);
+    }
 
     function startVoice() {
       const micBtn = document.getElementById('micBtn');
@@ -1029,8 +1042,9 @@
 
       recognizing = true;
       micBtn.classList.add('listening');
-      inputEl.placeholder = 'Listening… tap the mic again to send';
+      inputEl.placeholder = 'Listening… pause when you are done';
 
+      rec.onspeechstart = () => armSilenceTimer();
       rec.onresult = (e) => {
         let interim = '';
         for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -1047,10 +1061,12 @@
         }
         // Live preview only — no bubble is created until recognition ends.
         inputEl.value = (finalTranscript + interim).replace(/\s+/g, ' ').trimStart();
+        armSilenceTimer();   // each chunk of speech resets the pause clock
       };
 
       rec.onerror = () => {};   // silently allow retry / typing
       rec.onend = () => {
+        clearSilenceTimer();
         recognizing = false;
         recognizer = null;
         micBtn.classList.remove('listening');
@@ -1066,12 +1082,15 @@
       try { rec.start(); }
       catch (_) {
         recognizing = false; recognizer = null;
+        clearSilenceTimer();
         micBtn.classList.remove('listening');
         inputEl.placeholder = DEFAULT_PLACEHOLDER;
       }
     }
 
+    // Called by the silence timer (auto-send) or a second mic tap (manual send).
     function stopVoice() {
+      clearSilenceTimer();
       if (recognizer) {
         try { recognizer.stop(); } catch (_) {}   // flushes final result → onend posts the message
       }
