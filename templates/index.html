@@ -248,6 +248,19 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+
+    /* ─── Dev-only chrome ───
+       In the chat transcript, the meta row (step label / sources / fallback id),
+       the per-message classification card, and the voice metadata badge are
+       diagnostic. They only appear when dev mode is on; otherwise the user sees
+       just their message, the thinking indicator, and the final answer.
+       (The sidebar "Team C" .voice-badge is left untouched — only .messages is gated.) */
+    .messages .msg-meta,
+    .messages .clf-card,
+    .messages .voice-badge { display: none; }
+    body.dev-mode .messages .msg-meta    { display: flex; }
+    body.dev-mode .messages .clf-card    { display: block; }
+    body.dev-mode .messages .voice-badge { display: inline-block; }
     .msg-meta .tag {
       background: rgba(108, 92, 231, 0.08);
       color: var(--purple-deep);
@@ -663,13 +676,13 @@
     // ─── Dev mode toggle (both switches stay in sync) ───
     function setDevMode(on) {
       devMode = on;
+      // A single body-level class governs all dev-only chrome (meta rows,
+      // classification cards, voice badges) for both existing and future
+      // messages — see the "Dev-only chrome" CSS block.
+      document.body.classList.toggle('dev-mode', on);
       [sw1, sw2].forEach(sw => {
         sw.classList.toggle('on', on);
         sw.setAttribute('aria-checked', String(on));
-      });
-      // Show/hide existing classification cards already in the DOM
-      document.querySelectorAll('.clf-card').forEach(card => {
-        card.style.display = on ? 'block' : 'none';
       });
     }
     [sw1, sw2].forEach(sw => {
@@ -733,9 +746,8 @@
       `;
       messagesEl.appendChild(wrap);
 
-      // Always build the classification card; show/hide based on devMode
+      // Always build the classification card; CSS (body.dev-mode) controls visibility.
       const clf = buildClassificationCard(data);
-      clf.style.display = devMode ? 'block' : 'none';
       messagesEl.appendChild(clf);
 
       scrollDown();
@@ -990,6 +1002,9 @@
     }
 
     let recognizing = false;
+    let recognizer = null;
+    const DEFAULT_PLACEHOLDER = 'Ask anything about public services…';
+
     function startVoice() {
       const micBtn = document.getElementById('micBtn');
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -998,24 +1013,68 @@
         sendVoiceFixture('en_timber_permit');
         return;
       }
-      if (recognizing) { return; }
+      // A second tap stops listening and sends the full utterance as one message.
+      if (recognizing) { stopVoice(); return; }
+
       const rec = new SR();
+      recognizer = rec;
       rec.lang = 'en-US';
-      rec.interimResults = false;
+      rec.interimResults = true;   // stream a live preview into the input box
+      rec.continuous = true;       // keep one session open across pauses
       rec.maxAlternatives = 1;
+
+      // Accumulate across all result events; post exactly once, on end.
+      let finalTranscript = '';
+      let bestConfidence = 0;
+
       recognizing = true;
       micBtn.classList.add('listening');
+      inputEl.placeholder = 'Listening… tap the mic again to send';
+
       rec.onresult = (e) => {
-        const r = e.results[0][0];
-        const transcript = (r.transcript || '').trim();
-        const confidence = (typeof r.confidence === 'number' && r.confidence > 0) ? r.confidence : 0.9;
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i];
+          const alt = res[0];
+          if (res.isFinal) {
+            finalTranscript += alt.transcript;
+            if (typeof alt.confidence === 'number' && alt.confidence > bestConfidence) {
+              bestConfidence = alt.confidence;
+            }
+          } else {
+            interim += alt.transcript;
+          }
+        }
+        // Live preview only — no bubble is created until recognition ends.
+        inputEl.value = (finalTranscript + interim).replace(/\s+/g, ' ').trimStart();
+      };
+
+      rec.onerror = () => {};   // silently allow retry / typing
+      rec.onend = () => {
+        recognizing = false;
+        recognizer = null;
+        micBtn.classList.remove('listening');
+        inputEl.placeholder = DEFAULT_PLACEHOLDER;
+        const transcript = (finalTranscript || inputEl.value).replace(/\s+/g, ' ').trim();
+        inputEl.value = '';
         if (transcript) {
+          const confidence = bestConfidence > 0 ? bestConfidence : 0.9;
           postVoice({ transcript, confidence, language: 'en' }, transcript, { language: 'en', confidence });
         }
       };
-      rec.onerror = () => {};   // silently allow retry / typing
-      rec.onend = () => { recognizing = false; micBtn.classList.remove('listening'); };
-      try { rec.start(); } catch (_) { recognizing = false; micBtn.classList.remove('listening'); }
+
+      try { rec.start(); }
+      catch (_) {
+        recognizing = false; recognizer = null;
+        micBtn.classList.remove('listening');
+        inputEl.placeholder = DEFAULT_PLACEHOLDER;
+      }
+    }
+
+    function stopVoice() {
+      if (recognizer) {
+        try { recognizer.stop(); } catch (_) {}   // flushes final result → onend posts the message
+      }
     }
 
     function resetChat() {
