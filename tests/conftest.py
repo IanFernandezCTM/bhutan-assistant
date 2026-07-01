@@ -13,8 +13,8 @@ from pathlib import Path
 _PROTO = str(Path(__file__).resolve().parents[1])
 _ROOT = str(Path(__file__).resolve().parents[2])
 
-# Drop repo root / cwd entries so they can't shadow the prototype's modules…
-for p in (_ROOT, ""):
+# Drop repo root / cwd / PYTHONPATH entries so they can't shadow the prototype's modules…
+for p in (_ROOT, ".", ""):
     while p in sys.path:
         sys.path.remove(p)
 # …and pin the prototype dir first.

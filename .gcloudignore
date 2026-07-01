@@ -1,0 +1,11 @@
+# Keep secrets and junk out of the Cloud Build upload. The API key reaches
+# Cloud Run only via Secret Manager, never the source/image.
+.env
+.env.*
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+.venv/
+venv/

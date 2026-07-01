@@ -4,3 +4,15 @@ gunicorn==22.0.0
 # Phase-3 integration: validate the canonical nlp_intent_schema_v2 payload.
 # Pure-Python, Render-free-tier safe. If absent, intent_schema.validate() no-ops.
 jsonschema==4.23.0
+# LLM-first path (LOCAL_FIRST_PLAN.md): OpenAI-compatible client. Lightweight
+# (httpx + pydantic). Points at DeepInfra/Qwen3-32B today, on-prem vLLM later.
+# If absent, llm.is_configured() is False and the app uses the offline fallback.
+openai>=1.40.0
+
+# Conversational Dzongkha voice (see translate.py / tts_dz.py):
+#  - google-cloud-translate: EN<->DZ machine translation via ADC (Cloud Run SA)
+#  - transformers + scipy: live Dzongkha TTS with MMS-TTS-dzo
+#    (torch is installed separately in the Dockerfile as a CPU-only build)
+google-cloud-translate>=3.15.0
+transformers>=4.44.0
+scipy>=1.13.0

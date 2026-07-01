@@ -1,0 +1,596 @@
+<title>Bhutan Voice-First — From Four Teams to One Sovereign Product</title>
+<style>
+  :root{
+    /* ── Ground & paper ── */
+    --royal:#1b2a8f; --royal-deep:#141d5c; --royal-ink:#10205f;
+    --paper:#fffdf7; --cream:#fdf6e3;
+    /* ── Accents (Bhutan flag / dzong) ── */
+    --saffron:#f5a623; --gold:#c9a24b;
+    /* ── Team accents (prayer-flag set) ── */
+    --flag-blue:#2456b6; --flag-red:#c0392b; --flag-green:#1e7a5a; --flag-gold:#c9932b;
+    /* ── Neutrals, biased blue ── */
+    --ink:#16224e; --muted:#5c6488; --faint:#8b91ad; --line:#e6e2d2;
+    --sans:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"Cascadia Code","Consolas",ui-monospace,"SF Mono",Menlo,monospace;
+    /* ── Type scale (scales with the slide) ── */
+    --fs-eyebrow:clamp(9px,1.45vmin,15px);
+    --fs-title:clamp(23px,4.7vmin,52px);
+    --fs-lead:clamp(14px,2.35vmin,25px);
+    --fs-body:clamp(11.5px,1.82vmin,19px);
+    --fs-cardh:clamp(13px,2.1vmin,22px);
+    --fs-num:clamp(26px,6.2vmin,74px);
+    --fs-mono:clamp(8.5px,1.4vmin,14px);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:var(--sans); color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 50% -10%, #23327f 0%, var(--royal-deep) 55%, #0d1546 100%);
+    background-attachment:fixed;
+    overflow:hidden;
+  }
+
+  /* ── Stage ── */
+  .stage{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+  .slide{
+    position:absolute;
+    width:min(95vw, calc(94vh * 16 / 9));
+    aspect-ratio:16/9;
+    background:var(--paper);
+    border-radius:16px;
+    box-shadow:0 30px 80px -20px rgba(6,12,50,.7), 0 0 0 1px rgba(255,255,255,.04);
+    padding:clamp(18px,4vmin,52px) clamp(20px,4.6vmin,62px);
+    display:flex; flex-direction:column;
+    opacity:0; visibility:hidden; transform:translateY(14px) scale(.985);
+    transition:opacity .5s ease, transform .5s ease, visibility .5s;
+    overflow:hidden;
+    --accent:var(--saffron);
+  }
+  .slide.active{opacity:1; visibility:visible; transform:none;}
+  .slide.active .slide-body>*{animation:rise .55s both;}
+  .slide.active .slide-body>*:nth-child(2){animation-delay:.06s}
+  .slide.active .slide-body>*:nth-child(3){animation-delay:.12s}
+  .slide.active .slide-body>*:nth-child(4){animation-delay:.18s}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* ── Shared top / foot ── */
+  .slide-top{display:flex; justify-content:space-between; align-items:center; gap:1em; flex:none;}
+  .eyebrow{
+    display:flex; align-items:center; gap:.7em;
+    font-family:var(--mono); font-size:var(--fs-eyebrow); letter-spacing:.22em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+  }
+  .chip{width:.72em; height:.72em; border-radius:2px; background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);}
+  .wordmark{font-family:var(--mono); font-size:var(--fs-eyebrow); letter-spacing:.14em; color:var(--faint); text-transform:uppercase;}
+  .slide-body{flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:clamp(8px,2vmin,26px) 0; overflow:auto;}
+  .slide-foot{
+    flex:none; display:flex; justify-content:space-between; align-items:center;
+    padding-top:clamp(6px,1.4vmin,14px); border-top:1.5px solid var(--line);
+    font-family:var(--mono); font-size:var(--fs-mono); color:var(--faint); letter-spacing:.08em;
+  }
+  .pageno{font-variant-numeric:tabular-nums; letter-spacing:.14em;}
+  .pageno b{color:var(--royal); font-weight:700;}
+
+  /* ── Titles & text ── */
+  .title{font-size:var(--fs-title); line-height:1.03; font-weight:800; letter-spacing:-.015em; color:var(--royal-ink); text-wrap:balance; margin:.15em 0 .35em;}
+  .lead{font-size:var(--fs-lead); line-height:1.4; color:var(--muted); max-width:34em; text-wrap:pretty;}
+  .kicker{font-family:var(--mono); font-size:var(--fs-mono); letter-spacing:.2em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:.5em;}
+  p{margin:0}
+  b,strong{color:var(--ink); font-weight:700;}
+
+  /* ── Dark variant (title / goal / close) ── */
+  .slide.dark{background:linear-gradient(160deg,#1a267a 0%, var(--royal-deep) 70%, #0e1650 100%); color:#e9ecff;}
+  .slide.dark .title{color:#fff;}
+  .slide.dark .lead{color:#c4cbf0;}
+  .slide.dark .wordmark,.slide.dark .eyebrow{color:#9aa4de;}
+  .slide.dark .slide-foot{border-top-color:rgba(255,255,255,.14); color:#8f9ad6;}
+  .slide.dark .pageno b{color:var(--saffron);}
+  .slide.dark b,.slide.dark strong{color:#fff;}
+
+  /* ── Cards / grids ── */
+  .cols{display:grid; gap:clamp(10px,1.8vmin,22px);}
+  .c2{grid-template-columns:1fr 1fr;} .c3{grid-template-columns:repeat(3,1fr);}
+  .card{
+    background:color-mix(in srgb, var(--accent) 6%, var(--paper));
+    border:1.5px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+    border-radius:12px; padding:clamp(11px,1.9vmin,22px);
+    border-left:5px solid var(--accent); display:flex; flex-direction:column; gap:.5em; min-width:0;
+  }
+  .card h3{margin:0; font-size:var(--fs-cardh); color:var(--royal-ink); font-weight:750; letter-spacing:-.01em;}
+  .card p, .card li{font-size:var(--fs-body); line-height:1.38; color:var(--muted);}
+  .taglist{display:flex; flex-wrap:wrap; gap:.4em;}
+  .tag{font-family:var(--mono); font-size:var(--fs-mono); letter-spacing:.04em; padding:.28em .6em; border-radius:999px; background:color-mix(in srgb,var(--accent) 14%, transparent); color:color-mix(in srgb,var(--accent) 72%, var(--ink)); border:1px solid color-mix(in srgb,var(--accent) 30%, transparent); white-space:nowrap;}
+  ul.clean{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:.42em;}
+  ul.clean li{position:relative; padding-left:1.15em; font-size:var(--fs-body); line-height:1.36; color:var(--muted);}
+  ul.clean li::before{content:""; position:absolute; left:0; top:.52em; width:.42em; height:.42em; border-radius:1px; background:var(--accent);}
+  .strength{background:color-mix(in srgb,var(--flag-green) 8%, var(--paper)); border-color:color-mix(in srgb,var(--flag-green) 26%, var(--line)); border-left-color:var(--flag-green);}
+  .strength h3{color:#12613f;}
+  .strength .dot::before{background:var(--flag-green);}
+
+  /* ── Pipeline flow ── */
+  .flow{display:flex; align-items:stretch; gap:.5em; flex-wrap:wrap;}
+  .step{flex:1 1 0; min-width:8.5em; background:var(--paper); border:1.5px solid var(--line); border-top:4px solid var(--accent); border-radius:10px; padding:clamp(8px,1.5vmin,16px); display:flex; flex-direction:column; gap:.3em;}
+  .step .n{font-family:var(--mono); font-size:var(--fs-mono); color:var(--accent); letter-spacing:.1em;}
+  .step h4{margin:0; font-size:var(--fs-body); font-weight:750; color:var(--royal-ink);}
+  .step p{font-size:calc(var(--fs-body) * .92); color:var(--muted); line-height:1.3;}
+  .step.hero{border:2px solid var(--saffron); background:color-mix(in srgb,var(--saffron) 10%, var(--paper)); flex:1.4 1 0;}
+  .chev{align-self:center; color:var(--faint); font-size:var(--fs-lead); flex:none;}
+
+  /* ── Big stats ── */
+  .stat{display:flex; flex-direction:column; gap:.15em;}
+  .stat .big{font-size:var(--fs-num); font-weight:800; line-height:.95; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:#fff;}
+  .stat .lbl{font-family:var(--mono); font-size:var(--fs-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--saffron);}
+  .stat p{font-size:var(--fs-body); color:#c4cbf0; line-height:1.36;}
+  .stat .big.word{font-size:clamp(22px,4.6vmin,52px);}
+
+  /* ── cost band (on the dark constraint slide) ── */
+  .costband{border-top:1.5px solid rgba(255,255,255,.18); padding-top:clamp(10px,1.8vmin,20px);}
+  .cbhead{font-family:var(--mono); font-size:var(--fs-mono); letter-spacing:.18em; text-transform:uppercase; color:var(--saffron); font-weight:700; margin-bottom:.7em;}
+  .cbrow{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(10px,2vmin,28px);}
+  .cb{display:flex; flex-direction:column; gap:.2em; border-left:3px solid rgba(245,166,35,.55); padding-left:.7em;}
+  .cb .v{font-size:clamp(22px,4.4vmin,50px); font-weight:800; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1;}
+  .cb .v small{font-size:.42em; font-weight:700; color:#c4cbf0; letter-spacing:0;}
+  .cb .k{font-family:var(--mono); font-size:var(--fs-mono); color:#aab2ee; letter-spacing:.05em; line-height:1.35;}
+  .cbnote{font-size:var(--fs-body); color:#c4cbf0; margin-top:.7em; max-width:56em;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:clamp(10px,1.8vmin,22px);}
+  .ccard{background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.16); border-radius:12px; padding:clamp(9px,1.5vmin,17px) clamp(11px,1.7vmin,20px); display:flex; flex-direction:column; gap:.15em;}
+  .ccard.win{border-color:var(--saffron); background:color-mix(in srgb,var(--saffron) 13%, transparent); box-shadow:0 0 0 3px color-mix(in srgb,var(--saffron) 12%, transparent);}
+  .ctitle{font-family:var(--mono); font-size:var(--fs-mono); letter-spacing:.08em; text-transform:uppercase; color:#cfd5ff; font-weight:700; padding-bottom:.35em;}
+  .ccard.win .ctitle{color:var(--saffron);}
+  .crow{display:flex; justify-content:space-between; align-items:baseline; gap:.8em; border-top:1px solid rgba(255,255,255,.12); padding:.34em 0;}
+  .ck{font-family:var(--mono); font-size:var(--fs-mono); color:#9aa4de; letter-spacing:.03em;}
+  .cv{font-size:clamp(15px,2.5vmin,27px); font-weight:800; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:-.01em; text-align:right; white-space:nowrap;}
+  .cv.no{color:#ff9c8f;}
+
+  /* ── Matrix table ── */
+  table.matrix{width:100%; border-collapse:collapse; font-size:var(--fs-body);}
+  table.matrix th{font-family:var(--mono); font-size:var(--fs-mono); text-transform:uppercase; letter-spacing:.12em; color:var(--muted); text-align:left; padding:.5em .7em; border-bottom:2px solid var(--line); font-weight:600;}
+  table.matrix td{padding:.6em .7em; vertical-align:top; border-bottom:1px solid var(--line); line-height:1.34; color:var(--muted);}
+  table.matrix tr td:first-child{font-weight:750; color:var(--royal-ink); white-space:nowrap;}
+  .team-dot{display:inline-block; width:.6em; height:.6em; border-radius:2px; margin-right:.5em; vertical-align:middle;}
+  .kept{color:#12613f;} .drop{color:#a23b2f;}
+  .why{color:var(--faint); font-style:italic;}
+
+  /* ── env-var block ── */
+  .env{font-family:var(--mono); font-size:var(--fs-body); background:rgba(4,10,45,.5); border:1px solid rgba(255,255,255,.14); border-left:4px solid var(--saffron); border-radius:10px; padding:clamp(10px,1.8vmin,20px); color:#dfe4ff; line-height:1.7;}
+  .env .k{color:var(--saffron);} .env .c{color:#8f9ad6;} .env .v{color:#fff;}
+  .swap{display:flex; align-items:center; gap:1em; flex-wrap:wrap; font-family:var(--mono); font-size:var(--fs-body);}
+  .pill{padding:.5em 1em; border-radius:999px; border:1.5px solid rgba(255,255,255,.2); color:#dfe4ff; background:rgba(255,255,255,.04);}
+  .pill.on{border-color:var(--saffron); color:#fff; background:color-mix(in srgb,var(--saffron) 16%, transparent);}
+
+  /* ── decorative motifs ── */
+  .peaks{position:absolute; left:0; right:0; bottom:0; height:26%; pointer-events:none; opacity:.5;}
+  .emblem{position:absolute; right:clamp(24px,5vmin,70px); top:50%; transform:translateY(-50%); width:min(30vmin,320px); aspect-ratio:1; pointer-events:none; opacity:.9;}
+  .emblem .ring{position:absolute; inset:0; margin:auto; border:2px solid var(--saffron); border-radius:14%; transform:rotate(45deg); opacity:.5;}
+  .hero-body{display:flex; flex-direction:column; justify-content:center; gap:.4em; position:relative; z-index:2; max-width:20em;}
+
+  /* ── Controls ── */
+  .bar{position:fixed; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.08); z-index:40;}
+  .bar>i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--saffron),var(--gold)); transition:width .5s ease;}
+  .controls{position:fixed; bottom:clamp(12px,2.4vmin,26px); left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:.5em; z-index:50; background:rgba(10,16,60,.5); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:.4em .6em;}
+  .controls button{font:inherit; cursor:pointer; border:none; background:transparent; color:#cfd5ff; width:2em; height:2em; border-radius:999px; display:grid; place-items:center; font-size:clamp(13px,1.7vmin,17px); transition:background .2s,color .2s;}
+  .controls button:hover{background:rgba(255,255,255,.12); color:#fff;}
+  .controls button:focus-visible{outline:2px solid var(--saffron); outline-offset:2px;}
+  .dots{display:flex; gap:.4em; padding:0 .4em;}
+  .dots i{width:.55em; height:.55em; border-radius:999px; background:rgba(255,255,255,.28); cursor:pointer; transition:background .2s, transform .2s;}
+  .dots i.on{background:var(--saffron); transform:scale(1.25);}
+  .count{font-family:var(--mono); font-size:var(--fs-mono); color:#aab2ee; letter-spacing:.1em; min-width:3.6em; text-align:center; font-variant-numeric:tabular-nums;}
+  .hint{position:fixed; top:clamp(10px,2vmin,20px); left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:var(--fs-mono); color:#7e88c8; letter-spacing:.1em; z-index:40; transition:opacity .6s; text-transform:uppercase;}
+
+  @media (prefers-reduced-motion:reduce){
+    .slide{transition:opacity .2s;} .slide.active .slide-body>*{animation:none;} .bar>i{transition:none;}
+    .slide{transform:none;}
+  }
+</style>
+
+<div class="stage" id="stage">
+
+  <!-- 1 · TITLE -->
+  <section class="slide dark active">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Bhutan GovTech · Voice-First Public Services</div><div class="wordmark">Prototype Build · 2026</div></div>
+    <div class="slide-body">
+      <div class="emblem"><div class="ring" style="inset:0"></div><div class="ring" style="inset:16%"></div><div class="ring" style="inset:32%"></div><div class="ring" style="inset:48%; border-color:var(--gold)"></div></div>
+      <div class="hero-body">
+        <div class="kicker" style="--accent:var(--saffron)">A citizen speaks. The government answers.</div>
+        <h1 class="title" style="font-size:clamp(30px,6.4vmin,74px)">From four teams<br>to one sovereign product</h1>
+        <p class="lead">How the Voice-First assistant was assembled — grounded in official Bhutanese policy, spoken in Dzongkha or English, and built to run on hardware the government owns.</p>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>Wrong information is unacceptable.</span></div>
+    <svg class="peaks" viewBox="0 0 100 30" preserveAspectRatio="none"><polygon points="0,30 12,14 22,22 34,6 46,20 58,10 70,23 82,9 92,18 100,12 100,30" fill="#2c3a90"/><polygon points="0,30 16,20 30,25 44,14 58,24 72,16 86,25 100,19 100,30" fill="#1a2570"/></svg>
+  </section>
+
+  <!-- 2 · OVERVIEW -->
+  <section class="slide" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> The Build · Four Tracks, One Goal</div><div class="wordmark">Bhutan Voice-First</div></div>
+    <div class="slide-body">
+      <div class="kicker">How a question travels</div>
+      <h2 class="title">Four teams built the parts.<br>The prototype unites them.</h2>
+      <div class="flow" style="margin-top:.3em">
+        <div class="step" style="--accent:var(--flag-green)"><span class="n">TEAM C</span><h4>🎙 Voice in</h4><p>Speech → text (ASR)</p></div>
+        <span class="chev">›</span>
+        <div class="step" style="--accent:var(--flag-blue)"><span class="n">TEAM A · NLP</span><h4>Understand</h4><p>Language, intent, IDs</p></div>
+        <span class="chev">›</span>
+        <div class="step" style="--accent:var(--flag-red)"><span class="n">TEAM B</span><h4>Act</h4><p>Look up records</p></div>
+        <span class="chev">›</span>
+        <div class="step" style="--accent:var(--flag-gold)"><span class="n">TEAM D</span><h4>Trace</h4><p>Log every step</p></div>
+        <span class="chev">›</span>
+        <div class="step hero"><span class="n">PROTOTYPE</span><h4>Answer &amp; speak</h4><p>The live product</p></div>
+      </div>
+      <p class="lead" style="margin-top:1em; max-width:44em">The next four slides introduce each team and what it does best. Then we set the real constraints — and show exactly what the prototype kept, dropped, and how it works.</p>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>Agenda</span></div>
+  </section>
+
+  <!-- 3 · TEAM A NLP -->
+  <section class="slide" style="--accent:var(--flag-blue)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Team A · NLP Track</div><div class="wordmark">Understand the words</div></div>
+    <div class="slide-body">
+      <div class="kicker">Turning a sentence into structured facts</div>
+      <h2 class="title">Understanding the words</h2>
+      <div class="cols c2" style="margin-top:.2em">
+        <div class="card"><h3>What they built</h3>
+          <ul class="clean">
+            <li><b>Language detection</b> — Dzongkha vs English, by script (Unicode), instant and exact.</li>
+            <li><b>Intent classification</b> — bilingual keyword rules across land, tax, civil registry.</li>
+            <li><b>Entity extraction</b> — pulls out CID, plot, tax year, document type with regex.</li>
+            <li><b>Early document search</b> over the real policy corpus.</li>
+          </ul>
+        </div>
+        <div class="card strength"><h3>Why it's strong</h3>
+          <ul class="clean">
+            <li><b>Fast, offline, deterministic</b> — no API key, no model to host.</li>
+            <li><b>Exact by design</b> — an 11-digit CID is copied character-for-character, never "rephrased".</li>
+            <li><b>Bilingual from day one.</b></li>
+            <li><b>Proven reusable</b> — the product adopted this logic verbatim.</li>
+          </ul>
+          <div class="taglist"><span class="tag">regex</span><span class="tag">bilingual</span><span class="tag">zero-cost</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>team_a_nlp/</span></div>
+  </section>
+
+  <!-- 4 · TEAM B -->
+  <section class="slide" style="--accent:var(--flag-red)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Team B · Agentic Workflow</div><div class="wordmark">Take action</div></div>
+    <div class="slide-body">
+      <div class="kicker">An agent that uses tools, not just talks</div>
+      <h2 class="title">Taking action with tools</h2>
+      <div class="cols c2" style="margin-top:.2em">
+        <div class="card"><h3>What they built</h3>
+          <ul class="clean">
+            <li><b>A 13-step LangGraph agent</b> — safety → language → intent → orchestrate → speak.</li>
+            <li><b>Real tool lookups</b> — business, land, tax &amp; licence records by ID.</li>
+            <li><b>Layered guardrails</b> + human handoff.</li>
+            <li><b>Mock government endpoints</b> and formal hand-off contracts.</li>
+          </ul>
+        </div>
+        <div class="card strength"><h3>Why it's strong</h3>
+          <ul class="clean">
+            <li><b>Genuine transactions</b> — the best "do something for me" machinery in the project.</li>
+            <li><b>The only labelled test set</b> — 234 hand-checked questions.</li>
+            <li><b>Two-stage safety</b>, permission-aware.</li>
+            <li><b>Professional contracts</b> &amp; decision-trace logging.</li>
+          </ul>
+          <div class="taglist"><span class="tag">ReAct</span><span class="tag">tool-calling</span><span class="tag">test set</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>team_b/</span></div>
+  </section>
+
+  <!-- 5 · TEAM C -->
+  <section class="slide" style="--accent:var(--flag-green)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Team C · Voice</div><div class="wordmark">Ears &amp; mouth</div></div>
+    <div class="slide-body">
+      <div class="kicker">Because many citizens cannot read</div>
+      <h2 class="title">The ears and the mouth</h2>
+      <div class="cols c2" style="margin-top:.2em">
+        <div class="card"><h3>What they built</h3>
+          <ul class="clean">
+            <li><b>Speech recognition (ASR)</b> — Whisper for English, MMS for Dzongkha, with voice-activity detection.</li>
+            <li><b>Speech synthesis (TTS)</b> — neural English voice, MMS Dzongkha voice.</li>
+            <li><b>Benchmarks</b> for accuracy (WER) and end-to-end latency.</li>
+          </ul>
+        </div>
+        <div class="card strength"><h3>Why it's strong</h3>
+          <ul class="clean">
+            <li><b>English listening is proven</b> — 6.6–11.2% word-error, well under the 20% target.</li>
+            <li><b>A real, working voice loop</b> — speak in, hear back.</li>
+            <li><b>Honest latency work</b> — pinpointed <b>speaking</b> as the bottleneck, not thinking.</li>
+          </ul>
+          <div class="taglist"><span class="tag">Whisper</span><span class="tag">WER&lt;20%</span><span class="tag">EN + DZ</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>team_c_voice/</span></div>
+  </section>
+
+  <!-- 6 · TEAM D -->
+  <section class="slide" style="--accent:var(--flag-gold)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Team D · Integration</div><div class="wordmark">Glue &amp; referee</div></div>
+    <div class="slide-body">
+      <div class="kicker">Making the whole thing auditable</div>
+      <h2 class="title">The glue and the referee</h2>
+      <div class="cols c2" style="margin-top:.2em">
+        <div class="card"><h3>What they built</h3>
+          <ul class="clean">
+            <li><b>A trace ID on every request</b> — one number follows it through every step.</li>
+            <li><b>Structured JSON logging</b> — searchable, not loose text.</li>
+            <li><b>A canonical intent schema</b> — the strict shared "form" teams hand off.</li>
+            <li><b>A trace dashboard</b> + latency harness.</li>
+          </ul>
+        </div>
+        <div class="card strength"><h3>Why it's strong</h3>
+          <ul class="clean">
+            <li><b>Auditability</b> — a legal must-have for a government service.</li>
+            <li><b>One agreed contract</b> stops teams drifting apart.</li>
+            <li><b>The most production-shaped code</b> in the repo.</li>
+            <li><b>Framework-agnostic</b> — the product adopted it directly.</li>
+          </ul>
+          <div class="taglist"><span class="tag">trace_id</span><span class="tag">schema</span><span class="tag">dashboard</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>team_d_integrations/</span></div>
+  </section>
+
+  <!-- 7 · THE GOAL -->
+  <section class="slide dark" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> The Real Constraint</div><div class="wordmark">Bhutan Voice-First</div></div>
+    <div class="slide-body" style="justify-content:space-between; gap:clamp(10px,2vmin,26px)">
+      <div>
+        <div class="kicker" style="--accent:var(--saffron)">The finish line isn't a demo</div>
+        <h2 class="title" style="font-size:clamp(28px,5.6vmin,62px)">Every choice must survive three hard limits</h2>
+      </div>
+      <div class="cols c3">
+        <div class="stat"><span class="lbl">Sovereignty</span><span class="big word">On-prem</span><p>On a GPU the government owns — no data leaves the network.</p></div>
+        <div class="stat"><span class="lbl">Scale</span><span class="big">5,000+</span><p>Conversations a day — real citizen load.</p></div>
+        <div class="stat"><span class="lbl">Cost</span><span class="big word">Owned</span><p>One machine, not a per-question bill.</p></div>
+      </div>
+      <div class="costband">
+        <div class="cbhead">Cost at 5,000 conversations/day — prototype vs. the Team A–D system</div>
+        <div class="compare">
+          <div class="ccard win">
+            <div class="ctitle">◆ Prototype — one grounded call/turn</div>
+            <div class="crow"><span class="ck">Hosted LLM API</span><span class="cv">≈ $110/mo</span></div>
+            <div class="crow"><span class="ck">On the owned GPU</span><span class="cv">≈ $0 / call</span></div>
+            <div class="crow"><span class="ck">One-time GPU</span><span class="cv">$13K → owned</span></div>
+          </div>
+          <div class="ccard">
+            <div class="ctitle">Team A–D system — 4–8 calls/turn</div>
+            <div class="crow"><span class="ck">Hosted LLM API</span><span class="cv">≈ $450–900/mo</span></div>
+            <div class="crow"><span class="ck">On the owned GPU</span><span class="cv no">✗ can't · Groq-bound</span></div>
+            <div class="crow"><span class="ck">Result</span><span class="cv no">cloud fees, forever</span></div>
+          </div>
+        </div>
+        <p class="cbnote">The prototype is <b>cheaper to run</b> — and the only design that can reach the <b>$0, fully-sovereign</b> end-state. The Team A–D stack makes 4–8 model calls per turn, and its brain (Groq) can never move on-prem.</p>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>The goal → the lens</span></div>
+    <svg class="peaks" viewBox="0 0 100 30" preserveAspectRatio="none"><polygon points="0,30 12,14 22,22 34,6 46,20 58,10 70,23 82,9 92,18 100,12 100,30" fill="#2c3a90"/><polygon points="0,30 16,20 30,25 44,14 58,24 72,16 86,25 100,19 100,30" fill="#1a2570"/></svg>
+  </section>
+
+  <!-- 8 · THE TENSION -->
+  <section class="slide" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> Why It Reshapes Everything</div><div class="wordmark">The lens</div></div>
+    <div class="slide-body">
+      <div class="kicker">"More" is not "better" here</div>
+      <h2 class="title">The constraints reward the opposite of complexity</h2>
+      <div class="cols c2" style="margin-top:.3em">
+        <div class="card" style="--accent:var(--flag-red)"><h3 style="color:#a23b2f">What the goal punishes</h3>
+          <ul class="clean">
+            <li><b>Many AI calls per question</b> — 4+ calls multiply cost &amp; latency.</li>
+            <li><b>A brain welded to a proprietary cloud</b> (e.g. Groq) — can't move on-prem.</li>
+            <li><b>Heavy, multi-service stacks</b> — fragile and expensive to run.</li>
+          </ul>
+        </div>
+        <div class="card strength"><h3>What the goal rewards</h3>
+          <ul class="clean">
+            <li><b>One call per question</b> — cheap, fast, easy to scale.</li>
+            <li><b>Open-weights model</b> you can download and host yourself.</li>
+            <li><b>A light footprint</b> + deterministic code where it's cheaper and safer.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:.9em; max-width:46em">This is the lens for every keep-or-drop decision on the next slide.</p>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>Design principle</span></div>
+  </section>
+
+  <!-- 9 · KEPT / DROPPED -->
+  <section class="slide" style="--accent:var(--gold)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> The Synthesis</div><div class="wordmark">Keep only what serves the goal</div></div>
+    <div class="slide-body">
+      <div class="kicker">What the prototype took — and left</div>
+      <h2 class="title" style="font-size:clamp(20px,3.9vmin,42px)">Best of every team, minus what the goal can't afford</h2>
+      <table class="matrix" style="margin-top:.4em">
+        <thead><tr><th>Team</th><th class="kept">Kept &amp; repurposed</th><th class="drop">Left behind — and why</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="team-dot" style="background:var(--flag-blue)"></span>A · NLP</td>
+            <td>Language-detect + entity-extract; policy docs; app shell + transparency panel; intent CSVs as eval data.</td>
+            <td>4-call Gemini classifier, keyword KB, the unverified <b>95.1%</b> claim. <span class="why">One grounded call replaces four; retrieval replaces the KB.</span></td>
+          </tr>
+          <tr>
+            <td><span class="team-dot" style="background:var(--flag-red)"></span>B · Agentic</td>
+            <td>Mock gov endpoints → vendored as sovereign <b>transactions.py</b>; trace-logging; routing tests as eval.</td>
+            <td>13-node LangGraph as default + the Groq brain. <span class="why">Too many calls; Groq can't run on Bhutan's own GPU.</span></td>
+          </tr>
+          <tr>
+            <td><span class="team-dot" style="background:var(--flag-green)"></span>C · Voice</td>
+            <td>Voice as core; the adapter contract; the Dzongkha feasibility findings.</td>
+            <td>Non-importable scripts &amp; live-TTS delay. <span class="why">Replaced by services + pre-recorded official audio.</span></td>
+          </tr>
+          <tr>
+            <td><span class="team-dot" style="background:var(--flag-gold)"></span>D · Integration</td>
+            <td>Trace logging, canonical schema, latency harness, dashboard.</td>
+            <td><span class="why">Almost nothing — it was built for exactly this.</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>LOCAL_FIRST_PLAN.md §8</span></div>
+  </section>
+
+  <!-- 10 · HOW IT WORKS -->
+  <section class="slide" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> The Prototype · How It Works</div><div class="wordmark">One grounded call</div></div>
+    <div class="slide-body">
+      <div class="kicker">The whole pipeline, one question</div>
+      <h2 class="title">One honest, grounded call per question</h2>
+      <div class="flow" style="margin-top:.3em">
+        <div class="step"><span class="n">1 · ENRICH</span><h4>Language + IDs</h4><p>Regex. No AI.</p></div>
+        <span class="chev">›</span>
+        <div class="step"><span class="n">2 · RETRIEVE</span><h4>Policy passages</h4><p>Keyword match, EN + aligned DZ.</p></div>
+        <span class="chev">›</span>
+        <div class="step hero"><span class="n">3 · ONE LLM CALL</span><h4>Answer + scope + safety + service</h4><p>Grounded only in the passages. Abstains if unsure.</p></div>
+        <span class="chev">›</span>
+        <div class="step" style="--accent:var(--flag-red)"><span class="n">4 · TRANSACT?</span><h4>If an ID is present</h4><p>In-process record lookup.</p></div>
+        <span class="chev">›</span>
+        <div class="step" style="--accent:var(--flag-green)"><span class="n">5 · SPEAK</span><h4>Translate + voice</h4><p>Dzongkha quoted, not invented.</p></div>
+      </div>
+      <div class="cols c3" style="margin-top:1em">
+        <div class="card"><h3>Grounded</h3><p>Answers only from official documents it's shown — never guesses.</p></div>
+        <div class="card"><h3>Abstains</h3><p>"I don't have that — here's the office" beats a confident wrong answer.</p></div>
+        <div class="card"><h3>Exact</h3><p>Numbers &amp; IDs copied verbatim; Dzongkha quoted from human-written text.</p></div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>app.py · assistant.py · rag.py</span></div>
+  </section>
+
+  <!-- 11 · SOVEREIGN SWAP -->
+  <section class="slide dark" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> The Key Idea</div><div class="wordmark">Simulate local now, own it later</div></div>
+    <div class="slide-body">
+      <div class="kicker" style="--accent:var(--saffron)">Rented cloud today · Bhutan's own GPU tomorrow</div>
+      <h2 class="title">Going sovereign is one setting, not a rewrite</h2>
+      <div class="cols c2" style="margin-top:.4em; align-items:center">
+        <div class="env">
+<span class="c"># the whole "socket" — three variables</span><br>
+<span class="k">LLM_BASE_URL</span> = <span class="v">https://api.deepinfra.com/v1</span> <span class="c">→ http://localhost:8000/v1</span><br>
+<span class="k">LLM_API_KEY</span>&nbsp; = <span class="v">&lt;key&gt;</span> <span class="c">→ EMPTY</span><br>
+<span class="k">LLM_MODEL</span>&nbsp;&nbsp;&nbsp;= <span class="v">Qwen/Qwen3-32B</span> <span class="c">(same weights)</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:.7em">
+          <div class="swap"><span class="pill">Rented cloud</span><span class="chev" style="color:var(--saffron)">→</span><span class="pill on">On-prem vLLM</span></div>
+          <p class="lead" style="color:#c4cbf0; max-width:24em">Same open-weights model behind a standard socket — so the demo runs the <b>exact checkpoint</b> the government will later host itself.</p>
+          <div class="cols c3" style="gap:.7em">
+            <div class="stat"><span class="lbl">Peak load</span><span class="big" style="font-size:clamp(18px,3.4vmin,34px)">~0.17</span><p>req/s average — one GPU sits idle most of the time.</p></div>
+            <div class="stat"><span class="lbl">Cloud cost</span><span class="big" style="font-size:clamp(18px,3.4vmin,34px)">~$110</span><p>/month hosted — the GPU is about ownership, not price.</p></div>
+            <div class="stat"><span class="lbl">Calls</span><span class="big" style="font-size:clamp(18px,3.4vmin,34px)">1</span><p>per question — the reason it scales cheaply.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>llm.py · DEPLOY_GCP.md</span></div>
+  </section>
+
+  <!-- 12 · TRANSACTIONS -->
+  <section class="slide" style="--accent:var(--flag-red)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> New · Sovereign Transactions</div><div class="wordmark">Team B's power, kept sovereign</div></div>
+    <div class="slide-body">
+      <div class="kicker">Checking your own record — safely</div>
+      <h2 class="title">It gained Team B's transactions, without Team B's cost</h2>
+      <div class="cols c2" style="margin-top:.3em">
+        <div class="card strength"><h3>Kept sovereign</h3>
+          <ul class="clean">
+            <li><b>In-process lookups</b> — business, tax, land, licence records.</li>
+            <li><b>No Groq, no second model call</b> — folded into the same single grounded call.</li>
+            <li>Fires <b>only when a real ID is present</b> — never hijacks a plain question.</li>
+          </ul>
+        </div>
+        <div class="card"><h3>One better than the original</h3>
+          <ul class="clean">
+            <li><b>Ownership check</b> — full details only when the citizen's CID matches the record's owner.</li>
+            <li>Otherwise it <b>reveals nothing</b> and asks them to verify identity.</li>
+            <li>Team B returned any record to anyone who knew the ID. A government service must not.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>transactions.py</span></div>
+  </section>
+
+  <!-- 13 · CLOSE -->
+  <section class="slide dark" style="--accent:var(--saffron)">
+    <div class="slide-top"><div class="eyebrow"><span class="chip"></span> In One Line</div><div class="wordmark">Bhutan Voice-First</div></div>
+    <div class="slide-body">
+      <div class="hero-body" style="max-width:26em">
+        <div class="kicker" style="--accent:var(--saffron)">The synthesis, summarised</div>
+        <h2 class="title" style="font-size:clamp(26px,5.4vmin,60px)">Grounded answers.<br>Owned hardware.<br>One call.</h2>
+        <p class="lead">The prototype keeps the best of every team, drops what the goal can't afford, and is the only design that reaches a sovereign GPU by changing a single setting.</p>
+      </div>
+    </div>
+    <div class="slide-foot"><span class="pageno"></span><span>Thank you</span></div>
+    <svg class="peaks" viewBox="0 0 100 30" preserveAspectRatio="none"><polygon points="0,30 12,14 22,22 34,6 46,20 58,10 70,23 82,9 92,18 100,12 100,30" fill="#2c3a90"/><polygon points="0,30 16,20 30,25 44,14 58,24 72,16 86,25 100,19 100,30" fill="#1a2570"/></svg>
+  </section>
+
+</div>
+
+<div class="hint" id="hint">← → or Space to navigate · F for fullscreen</div>
+<div class="bar"><i id="prog"></i></div>
+<div class="controls">
+  <button id="prev" aria-label="Previous slide">‹</button>
+  <div class="dots" id="dots"></div>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="Next slide">›</button>
+  <button id="full" aria-label="Toggle fullscreen">⤢</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let i = 0;
+  const dotsWrap = document.getElementById('dots');
+  const prog = document.getElementById('prog');
+  const count = document.getElementById('count');
+  const hint = document.getElementById('hint');
+
+  slides.forEach((s, n) => {
+    const p = s.querySelector('.pageno');
+    if (p) p.innerHTML = '<b>' + String(n + 1).padStart(2, '0') + '</b> / ' + String(total).padStart(2, '0');
+    const d = document.createElement('i');
+    d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', 'Go to slide ' + (n + 1));
+    d.addEventListener('click', () => go(n));
+    dotsWrap.appendChild(d);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function go(n) {
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    dots.forEach((d, k) => d.classList.toggle('on', k === i));
+    prog.style.width = ((i + 1) / total * 100) + '%';
+    count.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+  }
+  const next = () => go(i + 1);
+  const prev = () => go(i - 1);
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  document.getElementById('full').addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  });
+
+  addEventListener('keydown', (e) => {
+    if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(total - 1);
+    else if (e.key.toLowerCase() === 'f') document.getElementById('full').click();
+  });
+
+  // Click the right/left third of the stage to advance (ignoring the control bar).
+  document.getElementById('stage').addEventListener('click', (e) => {
+    if (e.target.closest('.controls, .dots, button, a')) return;
+    (e.clientX > innerWidth * 0.55) ? next() : (e.clientX < innerWidth * 0.45 ? prev() : null);
+  });
+
+  setTimeout(() => hint.style.opacity = '0', 4200);
+  go(0);
+</script>

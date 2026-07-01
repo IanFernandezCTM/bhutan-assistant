@@ -1,1119 +1,485 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bhutan Public Services Assistant</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bhutan Public Services Assistant — GovTech Bhutan</title>
   <style>
-    :root {
-      --bg:           #E8ECFB;   /* Omdena lavender-blue background */
-      --bg-card:      #FFFFFF;
-      --navy:         #14225A;   /* deep navy headers / brand */
-      --navy-soft:    #2C3878;
-      --text:         #4A4F6E;   /* body grey-blue */
-      --muted:        #8089A8;
-      --purple:       #6C5CE7;   /* CTA purple */
-      --purple-deep:  #5848D8;
-      --accent:       #FFD166;   /* warm Bhutan-inspired accent */
-      --good:         #21A179;
-      --warn:         #D97757;
-      --bad:          #C0392B;
-      --border:       rgba(20, 34, 90, 0.08);
-      --shadow-sm:    0 2px 8px rgba(20, 34, 90, 0.06);
-      --shadow-md:    0 8px 24px rgba(20, 34, 90, 0.08);
-      --radius-sm:    12px;
-      --radius-md:    18px;
-      --radius-lg:    28px;
-      --radius-pill:  999px;
+    /* ── GovTech Bhutan palette ─────────────────────────────── */
+    :root{
+      --blue:#1b2a8f; --blue-d:#142066; --orange:#f5a623; --gold:#c9a24b;
+      --cream:#fdf6e3; --ink:#23262b; --muted:#6b7280; --line:#e6dcc2;
+      --bot:#ffffff; --user:#1b2a8f; --ok:#1f7a4d; --warn:#9a6a00;
+      --shadow:0 6px 24px rgba(20,32,102,.12);
     }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);
+      background:var(--cream);}
+    /* gold double rule used as a Bhutanese-style accent */
+    .gold-rule{height:4px;background:
+       linear-gradient(90deg,var(--gold),#f0e2b8 40%,var(--gold));}
 
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.55;
-      -webkit-font-smoothing: antialiased;
-    }
+    /* ── Header ─────────────────────────────────────────────── */
+    header{background:#fff;}
+    .topbar{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;
+      padding:12px 18px;}
+    .logo{display:flex;flex-direction:column;line-height:1}
+    .logo .dz{font-size:11px;color:var(--blue);opacity:.8}
+    .logo .wm{font-size:30px;font-weight:800;color:var(--blue);letter-spacing:.5px}
+    .logo .wm span{color:var(--orange)}
+    .logo .sub{font-size:11px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+    .spacer{flex:1}
+    .lang-toggle{display:flex;border:2px solid var(--blue);border-radius:999px;overflow:hidden}
+    .lang-toggle button{border:0;background:#fff;color:var(--blue);font-weight:700;
+      padding:7px 16px;cursor:pointer;font-size:14px}
+    .lang-toggle button.active{background:var(--blue);color:#fff}
 
-    /* ─── Header ─── */
-    header.site {
-      background: #F4F5FB;
-      padding: 18px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid rgba(20, 34, 90, 0.04);
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--navy);
-      font-weight: 700;
-      font-size: 22px;
-      letter-spacing: -0.01em;
-    }
-    .brand-mark {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: conic-gradient(from 220deg, #6C5CE7, #00B4D8, #FFD166, #6C5CE7);
-      position: relative;
-    }
-    .brand-mark::after {
-      content: ""; position: absolute; inset: 6px;
-      border-radius: 50%; background: #F4F5FB;
-    }
-    .brand-team {
-      align-self: center;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--purple-deep);
-      background: rgba(108, 92, 231, 0.10);
-      padding: 3px 10px;
-      border-radius: var(--radius-pill);
-    }
-    .nav-actions {
-      display: flex; align-items: center; gap: 28px;
-    }
-    .dev-toggle {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 14px; color: var(--navy-soft); font-weight: 500;
-      user-select: none;
-    }
-    .switch {
-      position: relative;
-      width: 44px; height: 24px;
-      background: #C8CEE5;
-      border-radius: var(--radius-pill);
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    .switch::after {
-      content: "";
-      position: absolute;
-      top: 2px; left: 2px;
-      width: 20px; height: 20px;
-      background: white;
-      border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-      transition: transform 0.2s ease;
-    }
-    .switch.on { background: var(--purple); }
-    .switch.on::after { transform: translateX(20px); }
+    nav{background:var(--blue)}
+    nav ul{max-width:1100px;margin:0 auto;display:flex;list-style:none;padding:0 10px;gap:2px}
+    nav a{display:block;color:#dfe3ff;text-decoration:none;padding:14px 20px;font-weight:600;
+      font-size:15px}
+    nav a.active{background:var(--orange);color:#3a2600}
+    nav a:hover:not(.active){background:var(--blue-d);color:#fff}
 
-    .pill-btn {
-      background: var(--purple);
-      color: white;
-      padding: 10px 24px;
-      border-radius: var(--radius-pill);
-      font-weight: 600;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    .pill-btn:hover { background: var(--purple-deep); }
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero{background:linear-gradient(180deg,#fffdf6,var(--cream));
+      border-bottom:1px solid var(--line)}
+    .hero-in{max-width:1100px;margin:0 auto;padding:22px 18px 16px}
+    .hero h1{margin:0 0 4px;font-size:26px;color:var(--blue-d)}
+    .hero .h-dz{font-size:20px;color:var(--gold);font-weight:700;margin-bottom:6px}
+    .hero p{margin:0;color:var(--muted);max-width:760px}
 
-    /* ─── Hero ─── */
-    .hero {
-      padding: 60px 48px 32px;
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-    .hero h1 {
-      font-family: 'Fraunces', serif;
-      color: var(--navy);
-      font-size: clamp(32px, 4.2vw, 52px);
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      margin: 0 0 12px;
-      line-height: 1.08;
-    }
-    .hero p {
-      color: var(--navy-soft);
-      font-size: 18px;
-      max-width: 680px;
-      margin: 0;
-    }
-    .hero .kuzu {
-      display: inline-block;
-      background: white;
-      padding: 6px 14px;
-      border-radius: var(--radius-pill);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--navy);
-      margin-bottom: 18px;
-      box-shadow: var(--shadow-sm);
-    }
+    /* ── Assistant card ────────────────────────────────────── */
+    main{max-width:860px;margin:20px auto;padding:0 16px 80px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:16px;
+      box-shadow:var(--shadow);overflow:hidden}
+    .card-head{background:var(--blue);color:#fff;padding:12px 18px;display:flex;
+      align-items:center;gap:10px}
+    .card-head .dot{width:10px;height:10px;border-radius:50%;background:#46d39a}
+    .card-head b{font-size:15px}
+    .card-head .op{margin-left:auto;font-size:12px;color:#cfd6ff;cursor:pointer;
+      text-decoration:underline;background:none;border:0}
 
-    /* ─── Main grid ─── */
-    main {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 48px 80px;
-      display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 32px;
-      align-items: start;
-    }
+    #log{padding:18px;min-height:300px;max-height:52vh;overflow-y:auto;display:flex;
+      flex-direction:column;gap:14px}
+    .msg{max-width:86%;padding:12px 14px;border-radius:14px;line-height:1.5;
+      white-space:pre-wrap;word-wrap:break-word}
+    .msg.bot{background:var(--bot);border:1px solid var(--line);align-self:flex-start;
+      border-top-left-radius:4px}
+    .msg.user{background:var(--user);color:#fff;align-self:flex-end;border-top-right-radius:4px}
+    .msg .dz-text{font-size:1.18em;line-height:1.9}
+    .meta{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+    .listen{display:inline-flex;align-items:center;gap:7px;background:var(--orange);
+      color:#3a2600;border:0;border-radius:999px;padding:8px 16px;font-weight:800;
+      cursor:pointer;font-size:15px}
+    .listen:active{transform:translateY(1px)}
+    .src{font-size:12px;color:var(--muted)}
+    .src b{color:var(--blue)}
+    .badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700}
+    .badge.abstain{background:#fff3d6;color:var(--warn)}
+    .badge.unsafe{background:#fde2e1;color:#a3261f}
 
-    /* ─── Chat panel ─── */
-    .chat-panel {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 600px;
-    }
-    .chat-header {
-      padding: 22px 28px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .chat-title {
-      font-family: 'Fraunces', serif;
-      font-weight: 600;
-      color: var(--navy);
-      font-size: 20px;
-    }
-    .status-dot {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--muted);
-    }
-    .status-dot::before {
-      content: ""; width: 8px; height: 8px; border-radius: 50%;
-      background: var(--good);
-      box-shadow: 0 0 0 4px rgba(33, 161, 121, 0.15);
-    }
+    /* ── Composer (voice-first) ────────────────────────────── */
+    .composer{border-top:1px solid var(--line);padding:14px;display:flex;align-items:center;
+      gap:10px;background:#fffdf7}
+    .mic{flex:0 0 auto;width:64px;height:64px;border-radius:50%;border:0;cursor:pointer;
+      background:var(--blue);color:#fff;font-size:26px;box-shadow:var(--shadow);
+      display:grid;place-items:center}
+    .mic.rec{background:#d33; animation:pulse 1.1s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(211,51,51,.5)}70%{box-shadow:0 0 0 14px rgba(211,51,51,0)}}
+    .composer input{flex:1;border:2px solid var(--line);border-radius:999px;padding:14px 18px;
+      font-size:16px;outline:none}
+    .composer input:focus{border-color:var(--blue)}
+    .send{flex:0 0 auto;background:var(--blue);color:#fff;border:0;border-radius:999px;
+      padding:14px 22px;font-weight:800;cursor:pointer;font-size:16px}
+    .hint{max-width:860px;margin:8px auto 0;padding:0 16px;color:var(--muted);font-size:12px;
+      text-align:center}
+    .autoplay{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);
+      justify-content:center}
 
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      max-height: 560px;
-    }
-    .msg {
-      max-width: 78%;
-      animation: rise 0.3s ease;
-    }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .msg-bubble {
-      padding: 14px 18px;
-      border-radius: var(--radius-md);
-      font-size: 15px;
-      white-space: pre-wrap;
-      line-height: 1.55;
-    }
-    .msg.user { align-self: flex-end; }
-    .msg.user .msg-bubble {
-      background: var(--navy);
-      color: white;
-      border-bottom-right-radius: 6px;
-    }
-    .msg.bot { align-self: flex-start; max-width: 86%; }
-    .msg.bot .msg-bubble {
-      background: #F4F5FB;
-      color: var(--navy);
-      border-bottom-left-radius: 6px;
-    }
-    .msg.bot.warn .msg-bubble {
-      background: #FFF5EE;
-      border-left: 3px solid var(--warn);
-    }
-    .msg-meta {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 6px;
-      padding: 0 4px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    /* ── Operator (dev) panel ──────────────────────────────── */
+    #op-panel{display:none;background:#0f1322;color:#cdd6f4;font-family:ui-monospace,Consolas,monospace;
+      font-size:12px;padding:14px;max-height:40vh;overflow:auto}
+    #op-panel .stage{padding:4px 0;border-bottom:1px solid #20263b}
+    #op-panel .k{color:#8be9fd}
 
-    /* ─── Dev-only chrome ───
-       In the chat transcript, the meta row (step label / sources / fallback id),
-       the per-message classification card, and the voice metadata badge are
-       diagnostic. They only appear when dev mode is on; otherwise the user sees
-       just their message, the thinking indicator, and the final answer.
-       (The sidebar "Team C" .voice-badge is left untouched — only .messages is gated.) */
-    .messages .msg-meta,
-    .messages .clf-card,
-    .messages .voice-badge { display: none; }
-    body.dev-mode .messages .msg-meta    { display: flex; }
-    body.dev-mode .messages .clf-card    { display: block; }
-    body.dev-mode .messages .voice-badge { display: inline-block; }
-    .msg-meta .tag {
-      background: rgba(108, 92, 231, 0.08);
-      color: var(--purple-deep);
-      padding: 2px 8px;
-      border-radius: var(--radius-pill);
-      font-weight: 500;
-    }
+    /* ── Feedback form (per answer) ────────────────────────── */
+    .fb-btn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
+      color:var(--blue);border-radius:999px;padding:6px 13px;font-weight:700;cursor:pointer;font-size:13px}
+    .fb-btn:hover{border-color:var(--blue)}
+    .fb-form{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#fffdf7;
+      padding:13px;display:none;flex-direction:column;gap:11px;max-width:540px}
+    .fb-form.open{display:flex}
+    .fb-form h4{margin:0;font-size:14px;color:var(--blue-d)}
+    .fb-cap{font-size:12px;color:var(--muted);background:#fff;border:1px dashed var(--line);
+      border-radius:8px;padding:9px}
+    .fb-cap b{color:var(--blue)}
+    .fb-cap .lbl{text-transform:uppercase;letter-spacing:.06em;font-size:10px;color:var(--gold);font-weight:800}
+    .fb-cap details{margin-top:7px}
+    .fb-cap summary{cursor:pointer;color:var(--blue);font-weight:700}
+    .fb-cap pre{white-space:pre-wrap;word-break:break-word;margin:7px 0 0;
+      font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#3a4a63;
+      max-height:130px;overflow:auto;background:#f6f4ea;border-radius:6px;padding:8px}
+    .fb-rate{display:flex;gap:8px}
+    .fb-rate button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;
+      padding:9px;cursor:pointer;font-size:14px;font-weight:700;color:var(--ink)}
+    .fb-rate button.up.sel{border-color:var(--ok);background:#e7f6ee;color:var(--ok)}
+    .fb-rate button.down.sel{border-color:#c0392b;background:#fde8e6;color:#a3261f}
+    .fb-form textarea{border:1.5px solid var(--line);border-radius:10px;padding:10px;font:inherit;
+      font-size:14px;resize:vertical;min-height:64px;outline:none}
+    .fb-form textarea:focus{border-color:var(--blue)}
+    .fb-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center}
+    .fb-send{background:var(--blue);color:#fff;border:0;border-radius:999px;padding:9px 18px;
+      font-weight:800;cursor:pointer;font-size:14px}
+    .fb-cancel{background:none;border:0;color:var(--muted);cursor:pointer;font-weight:700;font-size:14px}
+    .fb-done{color:var(--ok);font-weight:800;font-size:14px;display:flex;align-items:center;gap:7px}
 
-    /* ─── Classification card (dev mode) ─── */
-    .clf-card {
-      margin-top: 10px;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 14px 16px;
-      font-family: 'JetBrains Mono', 'Menlo', monospace;
-      font-size: 12px;
-      box-shadow: var(--shadow-sm);
-    }
-    .clf-card h4 {
-      margin: 0 0 10px;
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .clf-card h4::before {
-      content: "⚙";
-      color: var(--purple);
-      font-size: 14px;
-    }
-    .clf-row {
-      display: grid;
-      grid-template-columns: 110px 1fr 56px;
-      gap: 12px;
-      padding: 6px 0;
-      align-items: center;
-      border-top: 1px dashed var(--border);
-    }
-    .clf-row:first-of-type { border-top: none; }
-    .clf-dim   { color: var(--muted); font-weight: 500; }
-    .clf-label { color: var(--navy); font-weight: 600; }
-    .clf-label.bad  { color: var(--bad); }
-    .clf-label.warn { color: var(--warn); }
-    .clf-conf {
-      text-align: right;
-      color: var(--purple-deep);
-      font-weight: 600;
-    }
-    .conf-bar {
-      grid-column: 1 / -1;
-      height: 3px;
-      background: #EDEFF8;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .conf-bar > span {
-      display: block;
-      height: 100%;
-      background: linear-gradient(90deg, var(--purple), var(--accent));
-      border-radius: 2px;
-    }
-    /* NLP enrichment rows (team_a_nlp track) */
-    .clf-subhead {
-      margin: 14px 0 4px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 6px;
-    }
-    .clf-subhead .clf-track {
-      color: var(--purple-deep);
-      background: #F2F0FB;
-      border-radius: 5px;
-      padding: 1px 7px;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-    .clf-subhead .clf-credit {
-      flex-basis: 100%;
-      font-weight: 400;
-      font-size: 10px;
-      letter-spacing: 0;
-      text-transform: none;
-      color: var(--muted);
-      font-family: 'JetBrains Mono', 'Menlo', monospace;
-    }
-    .clf-row.clf-enrich { grid-template-columns: 110px 1fr; }
+    /* ── Feedback viewer (dev mode) ────────────────────────── */
+    #fb-panel{display:none;background:#0f1322;color:#cdd6f4;padding:14px;max-height:44vh;overflow:auto;
+      border-top:2px solid var(--orange);font-size:12px}
+    #fb-panel .fbh{display:flex;align-items:center;gap:10px;margin-bottom:11px;
+      font-family:ui-monospace,Consolas,monospace}
+    #fb-panel .fbh b{color:var(--orange);font-size:13px;letter-spacing:.08em}
+    #fb-panel .fbh button{margin-left:auto;background:#20263b;color:#cdd6f4;border:0;border-radius:7px;
+      padding:6px 11px;cursor:pointer;font-size:12px}
+    #fb-panel .fbh button:hover{background:#2c3350}
+    .fb-item{border:1px solid #20263b;border-radius:10px;padding:11px;margin-bottom:9px}
+    .fb-item .top{display:flex;gap:10px;align-items:center;font-family:ui-monospace,Consolas,monospace;
+      color:#8b93b8;flex-wrap:wrap}
+    .fb-item .rate{font-weight:800}
+    .fb-item .rate.up{color:#46d39a}.fb-item .rate.down{color:#ff7a6b}
+    .fb-item .q{color:#fff;margin:7px 0 3px;font-size:13px}
+    .fb-item .cm{color:#dfe4ff;font-size:13px;line-height:1.5}
+    .fb-item details{margin-top:7px}
+    .fb-item summary{cursor:pointer;color:#8be9fd}
+    .fb-item pre{white-space:pre-wrap;word-break:break-word;font-size:11px;color:#9aa4de;
+      max-height:150px;overflow:auto;margin:7px 0 0}
+    .fb-empty{color:#8b93b8;font-family:ui-monospace,Consolas,monospace}
 
-    /* ─── Pipeline panel (which real component handled each stage) ─── */
-    .pl-row {
-      display: grid;
-      grid-template-columns: 86px 1fr auto;
-      gap: 10px;
-      padding: 5px 0;
-      align-items: baseline;
-      border-top: 1px dashed var(--border);
-    }
-    .pl-stage { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
-    .pl-comp  { color: var(--navy); font-weight: 500; word-break: break-word; }
-    .pl-comp .pl-detail { display: block; color: var(--muted); font-weight: 400; font-size: 10px; }
-    .pl-badge {
-      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
-      border-radius: 999px; padding: 2px 9px; white-space: nowrap;
-    }
-    .pl-badge.real     { color: var(--good); background: rgba(33,161,121,0.12); }
-    .pl-badge.fallback { color: var(--warn); background: rgba(217,119,87,0.12); }
-    .pl-badge.stub     { color: var(--bad);  background: rgba(192,57,43,0.10); }
-    .pl-badge.neutral  { color: var(--muted); background: rgba(128,137,168,0.12); }
-    .pl-traceid {
-      font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 10px;
-      color: var(--purple-deep); background: #F2F0FB; border-radius: 5px; padding: 1px 7px;
-    }
-    /* per-stage team credit tag */
-    .pl-team {
-      font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-      border-radius: 4px; padding: 1px 5px; margin-right: 6px; white-space: nowrap;
-      letter-spacing: 0.03em;
-    }
-    .pl-team.tA { color: #4B3FB8; background: rgba(108,92,231,0.14); }   /* Team A */
-    .pl-team.tB { color: #14225A; background: rgba(20,34,90,0.10); }     /* Team B */
-    .pl-team.tC { color: #157A57; background: rgba(33,161,121,0.14); }   /* Team C */
-    .pl-team.tD { color: #B0561F; background: rgba(217,119,87,0.16); }   /* Team D */
-    /* four-team credits legend */
-    .clf-credits { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-    .clf-credits > span {
-      font-size: 10.5px; color: var(--navy);
-      font-family: 'JetBrains Mono', 'Menlo', monospace; line-height: 1.4;
-    }
-    .clf-credits .ct { font-weight: 700; font-family: 'Inter', sans-serif; }
-    .clf-credits .ct.tA { color: #4B3FB8; }
-    .clf-credits .ct.tB { color: #14225A; }
-    .clf-credits .ct.tC { color: #157A57; }
-    .clf-credits .ct.tD { color: #B0561F; }
-    /* mic button + voice user badge */
-    #micBtn { background: white; color: var(--purple-deep); border: 1px solid var(--border); }
-    #micBtn.listening { background: var(--bad); color: white; border-color: var(--bad); animation: pulse 1.1s infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
-    .voice-badge {
-      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
-      color: #157A57; background: rgba(33,161,121,0.14); border-radius: 999px;
-      padding: 1px 8px; margin-bottom: 4px; display: inline-block;
-    }
-    .clf-entities { display: flex; flex-wrap: wrap; gap: 6px; }
-    .clf-entity {
-      background: #F2F0FB;
-      color: var(--purple-deep);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-size: 11px;
-    }
-    .clf-entity-none { background: transparent; color: var(--muted); padding-left: 0; }
+    footer{max-width:1100px;margin:0 auto;padding:18px;color:var(--muted);font-size:12px;text-align:center}
 
-    /* ─── Composer ─── */
-    .composer {
-      padding: 20px 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      background: white;
-    }
-    .composer input {
-      flex: 1;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-pill);
-      padding: 14px 22px;
-      font-size: 15px;
-      font-family: inherit;
-      color: var(--navy);
-      background: #F8F9FD;
-      transition: all 0.15s ease;
-      outline: none;
-    }
-    .composer input:focus {
-      background: white;
-      border-color: var(--purple);
-      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
-    }
-    .composer button {
-      background: var(--purple);
-      color: white;
-      border: none;
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s ease;
-      flex-shrink: 0;
-    }
-    .composer button:hover { background: var(--purple-deep); transform: scale(1.05); }
-    .composer button:disabled {
-      background: #C8CEE5; cursor: not-allowed; transform: none;
-    }
-
-    /* ─── Sidebar ─── */
-    aside {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      position: sticky;
-      top: 24px;
-    }
-    .side-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-md);
-      padding: 22px 24px;
-      box-shadow: var(--shadow-sm);
-    }
-    .side-card h3 {
-      font-family: 'Fraunces', serif;
-      color: var(--navy);
-      margin: 0 0 14px;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    .side-card p { font-size: 14px; margin: 0 0 12px; }
-    .quick-chips {
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
-    .quick-chips button {
-      background: #F4F5FB;
-      border: 1px solid var(--border);
-      color: var(--navy);
-      font-size: 13px;
-      padding: 8px 14px;
-      border-radius: var(--radius-pill);
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s ease;
-    }
-    .quick-chips button:hover {
-      background: var(--purple);
-      color: white;
-      border-color: var(--purple);
-    }
-
-    .dev-card {
-      background: linear-gradient(135deg, #14225A 0%, #2C3878 100%);
-      color: white;
-    }
-    .dev-card h3 { color: white; }
-    .dev-card p { color: rgba(255,255,255,0.75); }
-    .dev-card .toggle-inline {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-top: 12px;
-    }
-    .dev-card .toggle-inline label {
-      font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 500;
-    }
-
-    /* ─── Typing indicator ─── */
-    .typing {
-      display: inline-flex; gap: 4px; padding: 14px 18px;
-      background: #F4F5FB; border-radius: var(--radius-md);
-      border-bottom-left-radius: 6px;
-    }
-    .typing span {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--navy-soft);
-      animation: bounce 1.2s infinite ease-in-out;
-    }
-    .typing span:nth-child(2) { animation-delay: 0.15s; }
-    .typing span:nth-child(3) { animation-delay: 0.3s; }
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-      30% { transform: translateY(-6px); opacity: 1; }
-    }
-
-    /* ─── Footer ─── */
-    footer {
-      text-align: center;
-      padding: 32px 24px;
-      color: var(--muted);
-      font-size: 13px;
-      border-top: 1px solid var(--border);
-    }
-    footer .team { color: var(--navy-soft); font-weight: 600; }
-
-    /* ─── Responsive ─── */
-    @media (max-width: 960px) {
-      header.site { padding: 16px 20px; }
-      .hero { padding: 36px 20px 20px; }
-      main {
-        padding: 0 20px 60px;
-        grid-template-columns: 1fr;
-      }
-      aside { position: static; }
-      .nav-actions { gap: 14px; }
-      .dev-toggle span.label-text { display: none; }
-    }
+    /* floating chat bubble (for embedding on the real GovTech site) */
+    .bubble{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border-radius:50%;
+      background:var(--blue);color:#fff;display:grid;place-items:center;font-size:26px;
+      box-shadow:var(--shadow);cursor:default;opacity:.92}
+    @media(max-width:560px){ .logo .wm{font-size:24px} nav a{padding:12px 12px;font-size:14px} }
   </style>
 </head>
 <body>
-
-  <header class="site">
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <span>Bhutan Public Services</span>
-      <span class="brand-team">Team A</span>
-    </div>
-    <div class="nav-actions">
-      <div class="dev-toggle" id="devToggle">
-        <span class="label-text">Dev mode</span>
-        <div class="switch" id="devSwitch" role="switch" aria-checked="false" tabindex="0"></div>
+  <header>
+    <div class="topbar">
+      <div class="logo">
+        <span class="dz">འབྲུག་གཞུང་གི་འཕྲུལ་རིག་ལས་ཁུངས།</span>
+        <span class="wm">Gov<span>Tech</span></span>
+        <span class="sub">Bhutan</span>
       </div>
-      <button class="pill-btn" onclick="resetChat()">New chat</button>
+      <div class="spacer"></div>
+      <div class="lang-toggle" id="langToggle">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="dz">རྫོང་ཁ</button>
+      </div>
     </div>
+    <div class="gold-rule"></div>
+    <nav>
+      <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#" class="active">Assistant</a></li>
+        <li><a href="#">Services</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
   </header>
 
   <section class="hero">
-    <span class="kuzu">🙏 Kuzuzangpo la</span>
-    <h1>Government services,<br>one conversation away.</h1>
-    <p>Ask about permits, hospitals, business registration, and more — in English or Dzongkha. An AI assistant designed for Bhutan's public services, built by Team A.</p>
+    <div class="hero-in">
+      <div class="h-dz" id="heroDz">མི་སེར་ཞབས་ཏོག་ རོགས་རམ་པ།</div>
+      <h1 id="heroEn">Bhutan Public Services Assistant</h1>
+      <p id="heroSub">Ask about land, tax, civil registration, business, and more — by voice or text,
+        in Dzongkha or English. Answers come only from official government documents, and are read aloud to you.</p>
+    </div>
   </section>
 
   <main>
-    <div class="chat-panel">
-      <div class="chat-header">
-        <span class="chat-title">Assistant</span>
-        <span class="status-dot" id="statusDot">Connected</span>
+    <div class="card">
+      <div class="card-head">
+        <span class="dot"></span><b>Assistant</b>
+        <button class="op" id="opToggle">operator view</button>
       </div>
-
-      <div class="messages" id="messages">
-        <div class="msg bot">
-          <div class="msg-bubble">Kuzuzangpo la! 🙏 I can help you with permits, hospitals, business registration, and other Bhutan public services. What would you like to know?</div>
-        </div>
-      </div>
-
+      <div id="log"></div>
+      <div id="op-panel"></div>
+      <div id="fb-panel"></div>
       <div class="composer">
-        <input
-          id="input"
-          type="text"
-          placeholder="Ask anything about public services…"
-          autocomplete="off"
-        />
-        <button id="micBtn" onclick="startVoice()" aria-label="Speak (voice input — Team C)" title="Voice input (Team C ASR)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-        </button>
-        <button id="sendBtn" onclick="sendMessage()" aria-label="Send">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
+        <button class="mic" id="mic" title="Tap and speak">🎤</button>
+        <input id="input" autocomplete="off" placeholder="Type your question, or tap the mic…" />
+        <button class="send" id="send">Send</button>
       </div>
     </div>
-
-    <aside>
-      <div class="side-card">
-        <h3>Try asking</h3>
-        <p>Tap a question — turn on dev mode to watch the language and entities it detects.</p>
-        <div class="quick-chips">
-          <button onclick="sendPreset(this)">What documents do I need for a construction permit?</button>
-          <button onclick="sendPreset(this)">Register my land plot 905 — my CID is 11503002345</button>
-          <button onclick="sendPreset(this)">How do I file my tax for 2026?</button>
-          <button onclick="sendPreset(this)" lang="dz">ཁྲལ་སྤྲོད་ 2026</button>
-        </div>
-      </div>
-
-      <div class="side-card">
-        <h3>Try by voice <span class="voice-badge">Team C</span></h3>
-        <p>Tap the mic to speak (browser ASR), or play a sample transcription through the voice pipeline. Turn on dev mode to see Team C's ASR row.</p>
-        <div class="quick-chips">
-          <button onclick="sendVoiceFixture('en_timber_permit')">🎤 “…timber permit?” (EN)</button>
-          <button onclick="sendVoiceFixture('en_business_thimphu')">🎤 “…register a business…” (EN)</button>
-          <button onclick="sendVoiceFixture('dz_tax_2026')" lang="dz">🎤 ཁྲལ་སྤྲོད་ 2026 (DZ)</button>
-        </div>
-      </div>
-
-      <div class="side-card dev-card">
-        <h3>Developer view</h3>
-        <p>Turn on dev mode to see the full pipeline per message: the Gemini classifier (scope, safety, request type, service), Team A's bilingual language detection and entity extraction, and Team B's service routing (which agent handles it).</p>
-        <div class="toggle-inline">
-          <label>Show classifications</label>
-          <div class="switch" id="devSwitch2" role="switch" aria-checked="false" tabindex="0"></div>
-        </div>
-      </div>
-    </aside>
+    <div class="hint">
+      <label class="autoplay"><input type="checkbox" id="autoplay" checked /> Read answers aloud automatically</label>
+      <div id="micHint" style="margin-top:6px">Voice input uses your browser for this demo; the deployed system uses on-device Whisper / Dzongkha ASR.</div>
+    </div>
   </main>
 
-  <footer>
-    Bhutan Voice-First Public Service Assistant ·
-    <span class="team">Omdena · Team A</span>
-  </footer>
+  <div class="bubble" title="GovTech Assistant">💬</div>
+  <footer>Official prototype · Answers grounded in published policy documents · Powered by an on-premise local model</footer>
 
-  <script>
-    // ─── State ───
-    let devMode = false;
-    const messagesEl = document.getElementById('messages');
-    const inputEl    = document.getElementById('input');
-    const sendBtn    = document.getElementById('sendBtn');
-    const sw1        = document.getElementById('devSwitch');
-    const sw2        = document.getElementById('devSwitch2');
+<script>
+(function(){
+  var UI = {
+    en:{hero:"Bhutan Public Services Assistant",
+        heroDz:"མི་སེར་ཞབས་ཏོག་ རོགས་རམ་པ།",
+        sub:"Ask about land, tax, civil registration, business, and more — by voice or text, in Dzongkha or English. Answers come only from official government documents, and are read aloud to you.",
+        placeholder:"Type your question, or tap the mic…", send:"Send", listen:"Listen",
+        greet:"Kuzuzangpo la! I can help with Bhutanese public services. Ask me anything — by voice or text."},
+    dz:{hero:"Bhutan Public Services Assistant",
+        heroDz:"མི་སེར་ཞབས་ཏོག་ རོགས་རམ་པ།",
+        sub:"ས་ཆ། ཁྲལ། མི་སེར་ཐོ་བཀོད། ཚོང་ལས་ ཚུ་གི་སྐོར་ལས་ ངག་ཐོག་ ཡང་ན་ ཡིག་ཐོག་ལས་ འདྲི་དགོ། ལན་ཚུ་ ངོ་མའི་ གཞུང་གི་ ཡིག་ཆ་ལས་རྐྱངམ་ཅིག་ཨིན།",
+        placeholder:"དྲི་བ་ཡིག་དཀྲུས་འབད། ཡང་ན་ མའིཀ་ལུ་ཨེབ།", send:"སྐྱེལ།", listen:"ཉན།",
+        greet:"བཀྲ་ཤིས་བདེ་ལེགས། ང་གིས་ འབྲུག་གི་ མི་སེར་ཞབས་ཏོག་གི་སྐོར་ལས་ རོགས་རམ་འབད་ཚུགས།"}
+  };
+  var lang = "en";
+  var logEl = document.getElementById("log");
+  var input = document.getElementById("input");
+  var opPanel = document.getElementById("op-panel");
+  var fbPanel = document.getElementById("fb-panel");
 
-    // ─── Dev mode toggle (both switches stay in sync) ───
-    function setDevMode(on) {
-      devMode = on;
-      // A single body-level class governs all dev-only chrome (meta rows,
-      // classification cards, voice badges) for both existing and future
-      // messages — see the "Dev-only chrome" CSS block.
-      document.body.classList.toggle('dev-mode', on);
-      [sw1, sw2].forEach(sw => {
-        sw.classList.toggle('on', on);
-        sw.setAttribute('aria-checked', String(on));
-      });
-    }
-    [sw1, sw2].forEach(sw => {
-      sw.addEventListener('click', () => setDevMode(!devMode));
-      sw.addEventListener('keydown', (e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          setDevMode(!devMode);
-        }
-      });
+  function applyLang(){
+    var t = UI[lang];
+    document.getElementById("heroEn").textContent = t.hero;
+    document.getElementById("heroDz").textContent = t.heroDz;
+    document.getElementById("heroSub").textContent = t.sub;
+    input.placeholder = t.placeholder;
+    document.getElementById("send").textContent = t.send;
+    document.querySelectorAll("#langToggle button").forEach(function(b){
+      b.classList.toggle("active", b.dataset.lang===lang);
     });
+  }
+  document.querySelectorAll("#langToggle button").forEach(function(b){
+    b.onclick = function(){ lang=b.dataset.lang; applyLang(); };
+  });
 
-    // ─── Helpers ───
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+  function addUser(text){
+    var d=document.createElement("div"); d.className="msg user"; d.textContent=text;
+    logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight;
+  }
+  function addBot(res, prompt){
+    var d=document.createElement("div"); d.className="msg bot";
+    var isDz = (res.language==="dz");
+    var body=document.createElement("div");
+    body.className = isDz ? "dz-text" : "";
+    body.textContent = res.bot_text;
+    d.appendChild(body);
+
+    var meta=document.createElement("div"); meta.className="meta";
+    var listen=document.createElement("button"); listen.className="listen";
+    listen.innerHTML = "▶ " + UI[lang].listen;
+    listen.onclick=function(){ playMessage(res); };
+    meta.appendChild(listen);
+
+    var a = res.assistant||{};
+    if(a.abstained){ meta.appendChild(badge("no official answer","abstain")); }
+    if(a.safe===false){ meta.appendChild(badge("referred to office","unsafe")); }
+
+    if(res.sources && res.sources.length){
+      var s=document.createElement("span"); s.className="src";
+      s.innerHTML="Source: <b>"+res.sources.map(esc).join(", ")+"</b>";
+      meta.appendChild(s);
     }
+    d.appendChild(meta);
+    // Feedback affordance — only on real answers (not the opening greeting).
+    if(prompt){ d.appendChild(buildFeedbackUI(res, prompt)); }
+    logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight;
 
-    function addUserMessage(text, voiceMeta) {
-      const div = document.createElement('div');
-      div.className = 'msg user';
-      const badge = voiceMeta
-        ? `<div class="voice-badge">🎤 voice · ${escapeHtml(voiceMeta.language || 'en')} · ${Math.round((voiceMeta.confidence ?? 1) * 100)}% conf</div>`
-        : '';
-      div.innerHTML = `${badge}<div class="msg-bubble">${escapeHtml(text)}</div>`;
-      messagesEl.appendChild(div);
-      scrollDown();
+    if(document.getElementById("autoplay").checked){ playMessage(res); }
+    renderOps(res.pipeline);
+    if(opOn){ loadFeedback(); }   // keep the dev viewer fresh if it's open
+  }
+  function badge(txt,cls){var b=document.createElement("span");b.className="badge "+cls;b.textContent=txt;return b;}
+  function esc(s){return (s+"").replace(/[&<>]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]);});}
+
+  // ── Speech OUT (the part that matters for non-literate users) ──
+  // Demo uses the browser voice; the deployed system plays on-device TTS /
+  // pre-recorded official Dzongkha section audio (see LOCAL_FIRST_PLAN.md).
+  function speak(text, language){
+    try{
+      window.speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang = (language==="dz") ? "bo" : "en-US";  // browsers lack dz; bo is the closest tag
+      u.rate = (language==="dz") ? 0.9 : 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  // Prefer real server audio (pre-generated Dzongkha MMS-TTS) when present, since
+  // browsers have NO Dzongkha voice; otherwise use the browser voice (good for English).
+  var _cur=null;
+  function playMessage(res){
+    try{ window.speechSynthesis.cancel(); }catch(e){}
+    if(_cur){ try{ _cur.pause(); }catch(e){} _cur=null; }
+    if(res.audio_url){
+      try{ _cur=new Audio(res.audio_url); _cur.play().catch(function(){}); return; }catch(e){}
     }
+    speak(res.bot_text, res.language);
+  }
 
-    function addTypingIndicator() {
-      const div = document.createElement('div');
-      div.className = 'msg bot';
-      div.id = 'typing-indicator';
-      div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
-      messagesEl.appendChild(div);
-      scrollDown();
-    }
+  // ── Send ──
+  function send(text){
+    text=(text||input.value).trim(); if(!text) return;
+    addUser(text); input.value="";
+    var typing=document.createElement("div"); typing.className="msg bot"; typing.textContent="…";
+    logEl.appendChild(typing); logEl.scrollTop=logEl.scrollHeight;
+    fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text})})
+      .then(function(r){return r.json();})
+      .then(function(res){ typing.remove(); addBot(res, text); })
+      .catch(function(){ typing.textContent="Sorry — something went wrong. Please try again."; });
+  }
+  document.getElementById("send").onclick=function(){send();};
+  input.addEventListener("keydown",function(e){ if(e.key==="Enter"){ send(); }});
 
-    function removeTypingIndicator() {
-      const el = document.getElementById('typing-indicator');
-      if (el) el.remove();
-    }
-
-    function addBotMessage(data) {
-      const wrap = document.createElement('div');
-      const isWarn = !!data.fallback_id || (data.classification.safety.label === 'unsafe');
-      wrap.className = 'msg bot' + (isWarn ? ' warn' : '');
-
-      const meta = [];
-      if (data.step_label)  meta.push(`<span class="tag">${escapeHtml(data.step_label)}</span>`);
-      if (data.sources && data.sources.length) {
-        meta.push(`📚 ${escapeHtml(data.sources.join(', '))}`);
-      }
-      if (data.fallback_id)  meta.push(`⚠ ${escapeHtml(data.fallback_id)}`);
-
-      wrap.innerHTML = `
-        <div class="msg-bubble">${escapeHtml(data.bot_text)}</div>
-        ${meta.length ? `<div class="msg-meta">${meta.join('')}</div>` : ''}
-      `;
-      messagesEl.appendChild(wrap);
-
-      // Always build the classification card; CSS (body.dev-mode) controls visibility.
-      const clf = buildClassificationCard(data);
-      messagesEl.appendChild(clf);
-
-      scrollDown();
-    }
-
-    function plBadgeClass(status) {
-      const s = (status || '').toLowerCase();
-      if (s.startsWith('real') || s === 'client' || s === 'valid') return 'real';
-      if (s.startsWith('fallback')) return 'fallback';
-      if (s.startsWith('stub') || s === 'invalid') return 'stub';
-      return 'neutral';
-    }
-
-    // Which team owns each pipeline stage (shown as a credit tag in dev mode).
-    const STAGE_TEAM = {
-      asr: 'C', classify: 'A', enrich: 'A', rag: 'A',
-      route: 'B', schema: 'D', translate: 'A', logging: 'D',
+  // ── Speech IN (mic) — browser Web Speech API for the demo ──
+  var mic=document.getElementById("mic");
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(SR){
+    var rec=new SR(); rec.interimResults=false; rec.maxAlternatives=1;
+    mic.onclick=function(){
+      rec.lang = (lang==="dz") ? "bo-CN" : "en-US";
+      try{ rec.start(); mic.classList.add("rec"); }catch(e){}
     };
+    rec.onresult=function(e){ var t=e.results[0][0].transcript; send(t); };
+    rec.onend=function(){ mic.classList.remove("rec"); };
+    rec.onerror=function(){ mic.classList.remove("rec"); };
+  } else {
+    mic.onclick=function(){ input.focus(); };
+    mic.title="Voice input not supported in this browser — please type.";
+  }
 
-    function buildPipelinePanel(data) {
-      const p = data.pipeline || {};
-      const order = [
-        ['asr', 'ASR'], ['classify', 'Classify'], ['enrich', 'Enrich'],
-        ['rag', 'Retrieve'], ['route', 'Route'], ['schema', 'Schema'],
-        ['translate', 'Translate'], ['logging', 'Logging'],
-      ];
-      const rows = order.filter(([k]) => p[k]).map(([k, label]) => {
-        const st = p[k];
-        let statusText, detail = st.detail || '';
-        if (k === 'schema') {
-          statusText = st.extended_valid ? 'valid' : 'invalid';
-          detail = `canonical=${st.canonical_intent || '—'} · strict v2 ${st.strict_canonical_valid ? 'pass' : 'diverges (additive ext.)'}`;
-        } else {
-          statusText = st.status || '';
-        }
-        const team = STAGE_TEAM[k] || 'A';
-        return `
-          <div class="pl-row">
-            <span class="pl-stage">${escapeHtml(label)}</span>
-            <span class="pl-comp"><span class="pl-team t${team}">Team ${team}</span>${escapeHtml(st.component || '—')}${detail ? `<span class="pl-detail">${escapeHtml(detail)}</span>` : ''}</span>
-            <span class="pl-badge ${plBadgeClass(statusText)}">${escapeHtml(statusText)}</span>
-          </div>`;
-      }).join('');
-      const tid = data.trace_id ? `<span class="pl-traceid">${escapeHtml(data.trace_id)}</span>` : '';
-      return `
-        <div class="clf-subhead">
-          Pipeline · ${tid}
-          <span class="clf-credit">which real component (vs. fallback / stub) handled each stage — trace_id carried end-to-end</span>
-        </div>
-        ${rows}`;
+  // ── Operator (dev) view: pipeline panel + all-feedback viewer ──
+  var opOn=false;
+  document.getElementById("opToggle").onclick=function(){
+    opOn=!opOn;
+    opPanel.style.display=opOn?"block":"none";
+    fbPanel.style.display=opOn?"block":"none";
+    if(opOn){ loadFeedback(); }
+  };
+  function renderOps(p){
+    if(!p) return;
+    var rows=[];
+    function row(name,obj){
+      var bits=Object.keys(obj).map(function(k){return '<span class="k">'+k+'</span>='+esc(obj[k]);});
+      rows.push('<div class="stage"><b>'+name+'</b> &nbsp; '+bits.join("  ")+'</div>');
     }
+    Object.keys(p).forEach(function(k){
+      if(k==="trace_id"){ rows.unshift('<div class="stage">trace_id = '+esc(p[k])+'</div>'); return; }
+      if(typeof p[k]==="object" && p[k]) row(k,p[k]);
+    });
+    opPanel.innerHTML=rows.join("");
+  }
 
-    function buildClassificationCard(data) {
-      const c = data.classification;
-      const classifierKind = data.classifier_kind;
-      const language = data.language;
-      const entities = data.entities;
-      const routing = data.routing;
-      const dims = [
-        ['In-scope',     c.in_scope],
-        ['Safety',       c.safety],
-        ['Request type', c.request_type],
-        ['Service',      c.service],
-      ];
-      const labelClass = (dim, label) => {
-        if (dim === 'In-scope' && label === 'out_of_scope') return 'bad';
-        if (dim === 'Safety'   && label === 'unsafe')       return 'bad';
-        return '';
-      };
-      const rows = dims.map(([name, v]) => `
-        <div class="clf-row">
-          <span class="clf-dim">${name}</span>
-          <span class="clf-label ${labelClass(name, v.label)}">${escapeHtml(v.label)}</span>
-          <span class="clf-conf">${(v.confidence * 100).toFixed(0)}%</span>
-          <div class="conf-bar"><span style="width:${(v.confidence * 100).toFixed(0)}%"></span></div>
-        </div>
-      `).join('');
-
-      // NLP enrichment (team_a_nlp / Team A): language + extracted entities.
-      const langName = language === 'dz' ? 'Dzongkha (རྫོང་ཁ)' : 'English';
-      const entityList = entities && Object.keys(entities).length
-        ? Object.entries(entities).map(([k, val]) =>
-            `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
-        : '<span class="clf-entity clf-entity-none">none detected</span>';
-
-      // Service routing (team_b): which downstream agent + routing slots.
-      const r = routing || {};
-      const rAgent  = r.agent  || '—';
-      const rIntent = r.intent || '—';
-      const rConf   = (typeof r.confidence === 'number') ? ` · ${(r.confidence * 100).toFixed(0)}%` : '';
-      const slotList = r.slots && Object.keys(r.slots).length
-        ? Object.entries(r.slots).map(([k, val]) =>
-            `<span class="clf-entity">${escapeHtml(k.replace(/_/g, ' '))}: <b>${escapeHtml(String(val))}</b></span>`).join('')
-        : '<span class="clf-entity clf-entity-none">none</span>';
-
-      // Team C (voice) + Team D (canonical schema + audit) credit data.
-      const asr = data.asr;
-      const sch = (data.pipeline && data.pipeline.schema) || {};
-      const log = (data.pipeline && data.pipeline.logging) || {};
-      const ci = data.canonical_intent;
-      const canonIntent = (ci && ci.classification) ? ci.classification.intent : '—';
-      const teamCVal = asr
-        ? `${asr.source} · ${asr.language || ''} · ${Math.round((asr.confidence ?? 1) * 100)}% conf`
-        : 'no voice this turn — tap the mic 🎤 or a voice sample';
-      const schemaVal = sch.emitted
-        ? `${canonIntent} · ${sch.extended_valid ? 'valid (extended)' : 'invalid'} · ${sch.strict_canonical_valid ? 'strict v2 pass' : 'strict v2 diverges'}`
-        : 'not emitted';
-
-      const card = document.createElement('div');
-      card.className = 'clf-card';
-      card.innerHTML = `
-        <h4>Pipeline inspector · ${escapeHtml(classifierKind || 'Unknown')}</h4>
-        ${buildPipelinePanel(data)}
-        <div class="clf-subhead">
-          Classification · <span class="clf-track">4 dimensions</span>
-          <span class="clf-credit">in_scope / safety / request_type / service · Gemini CoT or keyword fallback</span>
-        </div>
-        ${rows}
-        <div class="clf-subhead">
-          NLP enrichment · <span class="clf-track">team_a_nlp</span>
-          <span class="clf-credit">bilingual detection + entity extraction · Team A NLP track</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Language</span>
-          <span class="clf-label">${escapeHtml(langName)}</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Entities</span>
-          <span class="clf-entities">${entityList}</span>
-        </div>
-        <div class="clf-subhead">
-          Service routing · <span class="clf-track">team_b</span>
-          <span class="clf-credit">intent → agent hand-off + slot extraction · Team B</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Routes to</span>
-          <span class="clf-label">${escapeHtml(rAgent)}</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Intent</span>
-          <span class="clf-label">${escapeHtml(rIntent)}${rConf}</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Slots</span>
-          <span class="clf-entities">${slotList}</span>
-        </div>
-        <div class="clf-subhead">
-          Voice I/O · <span class="clf-track">team_c</span>
-          <span class="clf-credit">ASR contract: transcript + confidence + language · Team C</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">ASR input</span>
-          <span class="clf-label">${escapeHtml(teamCVal)}</span>
-        </div>
-        <div class="clf-subhead">
-          Canonical intent + audit · <span class="clf-track">team_d</span>
-          <span class="clf-credit">nlp_intent_schema_v2 + structured trace_id logging · Team D</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Intent (v2)</span>
-          <span class="clf-label">${escapeHtml(canonIntent)}</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Schema</span>
-          <span class="clf-label">${escapeHtml(schemaVal)}</span>
-        </div>
-        <div class="clf-row clf-enrich">
-          <span class="clf-dim">Logging</span>
-          <span class="clf-label">${escapeHtml(log.component || '—')}</span>
-        </div>
-        <div class="clf-subhead">
-          Credits · <span class="clf-track">cross-team</span>
-          <span class="clf-credit">every stage above is one team's work</span>
-        </div>
-        <div class="clf-credits">
-          <span><span class="ct tA">Team A</span> — NLP: classification, language + entities, policy-doc RAG</span>
-          <span><span class="ct tB">Team B</span> — Agentic routing: intent → agent hand-off</span>
-          <span><span class="ct tC">Team C</span> — Voice I/O: ASR contract (transcript + confidence + language)</span>
-          <span><span class="ct tD">Team D</span> — Integration: canonical intent schema + trace_id logging</span>
-        </div>
-      `;
-      return card;
-    }
-
-    function scrollDown() {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    // ─── Send a message ───
-    async function sendMessage() {
-      const text = inputEl.value.trim();
-      if (!text) return;
-      inputEl.value = '';
-      sendBtn.disabled = true;
-      addUserMessage(text);
-      addTypingIndicator();
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
-        });
-        removeTypingIndicator();
-        if (!res.ok) throw new Error('Network error');
-        const data = await res.json();
-        addBotMessage(data);
-      } catch (err) {
-        removeTypingIndicator();
-        const fail = document.createElement('div');
-        fail.className = 'msg bot warn';
-        fail.innerHTML = `<div class="msg-bubble">Sorry, something went wrong on our side. Please try again.</div>`;
-        messagesEl.appendChild(fail);
-        scrollDown();
-      } finally {
-        sendBtn.disabled = false;
-        inputEl.focus();
-      }
-    }
-
-    function sendPreset(btn) {
-      inputEl.value = btn.textContent.trim();
-      sendMessage();
-    }
-
-    // ─── Voice mode (Team C ASR contract → POST /api/voice → same pipeline) ───
-    function postVoice(payload, displayText, voiceMeta) {
-      addUserMessage(displayText, voiceMeta);
-      addTypingIndicator();
-      sendBtn.disabled = true;
-      fetch('/api/voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-        .then(res => res.ok ? res.json() : Promise.reject(new Error('voice error')))
-        .then(data => { removeTypingIndicator(); addBotMessage(data); })
-        .catch(() => {
-          removeTypingIndicator();
-          const fail = document.createElement('div');
-          fail.className = 'msg bot warn';
-          fail.innerHTML = `<div class="msg-bubble">Sorry — the voice request failed. Please try again.</div>`;
-          messagesEl.appendChild(fail);
-          scrollDown();
-        })
-        .finally(() => { sendBtn.disabled = false; });
-    }
-
-    function sendVoiceFixture(id) {
-      // Play a canned Team C transcription through the voice pipeline.
-      postVoice({ fixture_id: id }, '(voice sample)', { language: id.startsWith('dz') ? 'dz' : 'en', confidence: 1 });
-    }
-
-    let recognizing = false;
-    let recognizer = null;
-    let silenceTimer = null;
-    const DEFAULT_PLACEHOLDER = 'Ask anything about public services…';
-    // Auto-send a voice message after this many ms of silence (a "long enough pause").
-    const VOICE_SILENCE_MS = 1800;
-
-    function clearSilenceTimer() {
-      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-    }
-    // Every chunk of recognized speech restarts this countdown; when it lapses we
-    // stop recognition, which flushes the final result and posts one message.
-    function armSilenceTimer() {
-      clearSilenceTimer();
-      silenceTimer = setTimeout(() => stopVoice(), VOICE_SILENCE_MS);
-    }
-
-    function startVoice() {
-      const micBtn = document.getElementById('micBtn');
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        // No in-browser ASR (e.g. Firefox, or Dzongkha) → use a sample transcription.
-        sendVoiceFixture('en_timber_permit');
-        return;
-      }
-      // A second tap stops listening and sends the full utterance as one message.
-      if (recognizing) { stopVoice(); return; }
-
-      const rec = new SR();
-      recognizer = rec;
-      rec.lang = 'en-US';
-      rec.interimResults = true;   // stream a live preview into the input box
-      rec.continuous = true;       // keep one session open across pauses
-      rec.maxAlternatives = 1;
-
-      // Accumulate across all result events; post exactly once, on end.
-      let finalTranscript = '';
-      let bestConfidence = 0;
-
-      recognizing = true;
-      micBtn.classList.add('listening');
-      inputEl.placeholder = 'Listening… pause when you are done';
-
-      rec.onspeechstart = () => armSilenceTimer();
-      rec.onresult = (e) => {
-        let interim = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const res = e.results[i];
-          const alt = res[0];
-          if (res.isFinal) {
-            finalTranscript += alt.transcript;
-            if (typeof alt.confidence === 'number' && alt.confidence > bestConfidence) {
-              bestConfidence = alt.confidence;
-            }
-          } else {
-            interim += alt.transcript;
-          }
-        }
-        // Live preview only — no bubble is created until recognition ends.
-        inputEl.value = (finalTranscript + interim).replace(/\s+/g, ' ').trimStart();
-        armSilenceTimer();   // each chunk of speech resets the pause clock
-      };
-
-      rec.onerror = () => {};   // silently allow retry / typing
-      rec.onend = () => {
-        clearSilenceTimer();
-        recognizing = false;
-        recognizer = null;
-        micBtn.classList.remove('listening');
-        inputEl.placeholder = DEFAULT_PLACEHOLDER;
-        const transcript = (finalTranscript || inputEl.value).replace(/\s+/g, ' ').trim();
-        inputEl.value = '';
-        if (transcript) {
-          const confidence = bestConfidence > 0 ? bestConfidence : 0.9;
-          postVoice({ transcript, confidence, language: 'en' }, transcript, { language: 'en', confidence });
-        }
-      };
-
-      try { rec.start(); }
-      catch (_) {
-        recognizing = false; recognizer = null;
-        clearSilenceTimer();
-        micBtn.classList.remove('listening');
-        inputEl.placeholder = DEFAULT_PLACEHOLDER;
-      }
-    }
-
-    // Called by the silence timer (auto-send) or a second mic tap (manual send).
-    function stopVoice() {
-      clearSilenceTimer();
-      if (recognizer) {
-        try { recognizer.stop(); } catch (_) {}   // flushes final result → onend posts the message
-      }
-    }
-
-    function resetChat() {
-      messagesEl.innerHTML = `
-        <div class="msg bot">
-          <div class="msg-bubble">Kuzuzangpo la! 🙏 I can help you with permits, hospitals, business registration, and other Bhutan public services. What would you like to know?</div>
-        </div>
-      `;
-      inputEl.focus();
-    }
-
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+  // Flatten the pipeline object into readable "stage: k=v, k=v" lines — used both
+  // in the feedback form preview and in the dev-mode viewer.
+  function pipelineToText(p){
+    if(!p) return "(no behind-the-scenes data for this turn)";
+    var lines=[];
+    if(p.trace_id){ lines.push("trace_id = "+p.trace_id); }
+    Object.keys(p).forEach(function(k){
+      if(k==="trace_id") return;
+      var v=p[k];
+      if(v && typeof v==="object"){
+        var bits=Object.keys(v).map(function(kk){return kk+"="+v[kk];});
+        lines.push(k+": "+bits.join(", "));
       }
     });
+    return lines.join("\n");
+  }
 
-    // Focus on load
-    window.addEventListener('load', () => inputEl.focus());
-  </script>
+  // ── Per-answer feedback form (auto-captures prompt + pipeline) ──
+  function buildFeedbackUI(res, prompt){
+    var wrap=document.createElement("div");
+    var btn=document.createElement("button");
+    btn.type="button"; btn.className="fb-btn"; btn.innerHTML="💬 Give feedback";
+
+    var form=document.createElement("div"); form.className="fb-form";
+    var rating={value:""};
+    form.innerHTML =
+      '<h4>Help us improve — what did you think of this answer?</h4>'+
+      '<div class="fb-cap"><span class="lbl">Captured automatically</span><br>'+
+        '<b>Your question:</b> '+esc(prompt)+
+        '<details><summary>Behind the scenes (what the system did)</summary>'+
+          '<pre>'+esc(pipelineToText(res.pipeline))+'</pre></details></div>'+
+      '<div class="fb-rate">'+
+        '<button type="button" class="up" data-r="up">👍 Helpful</button>'+
+        '<button type="button" class="down" data-r="down">👎 Needs work</button>'+
+      '</div>'+
+      '<textarea placeholder="Tell us what was good, wrong, or missing… (optional)"></textarea>'+
+      '<div class="fb-actions"><button type="button" class="fb-cancel">Cancel</button>'+
+        '<button type="button" class="fb-send">Submit feedback</button></div>';
+
+    form.querySelectorAll(".fb-rate button").forEach(function(b){
+      b.onclick=function(){
+        rating.value=b.dataset.r;
+        form.querySelectorAll(".fb-rate button").forEach(function(x){x.classList.remove("sel");});
+        b.classList.add("sel");
+      };
+    });
+    btn.onclick=function(){ form.classList.toggle("open"); };
+    form.querySelector(".fb-cancel").onclick=function(){ form.classList.remove("open"); };
+    form.querySelector(".fb-send").onclick=function(){
+      var comment=form.querySelector("textarea").value.trim();
+      if(!rating.value && !comment){ alert("Please pick a rating or write a comment first."); return; }
+      var body={
+        trace_id:(res.pipeline&&res.pipeline.trace_id)||res.trace_id||"",
+        prompt:prompt, answer:res.bot_text, language:res.language||"en",
+        rating:rating.value, comment:comment, pipeline:res.pipeline||{}
+      };
+      fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(body)})
+        .then(function(r){return r.json();})
+        .then(function(){
+          form.innerHTML='<div class="fb-done">✓ Thank you — your feedback was recorded.</div>';
+          if(opOn){ loadFeedback(); }
+        })
+        .catch(function(){ alert("Could not save feedback. Please try again."); });
+    };
+    wrap.appendChild(btn); wrap.appendChild(form);
+    return wrap;
+  }
+
+  // ── Dev-mode: show ALL feedback ──
+  function loadFeedback(){
+    fbPanel.innerHTML='<div class="fb-empty">Loading feedback…</div>';
+    fetch("/api/feedback")
+      .then(function(r){return r.json();})
+      .then(function(data){ renderFeedback(data.items||[], data.count||0); })
+      .catch(function(){ fbPanel.innerHTML='<div class="fb-empty">Could not load feedback.</div>'; });
+  }
+  function renderFeedback(items, count){
+    var html='<div class="fbh"><b>ALL FEEDBACK ('+count+')</b>'+
+      '<button type="button" id="fbRefresh">↻ Refresh</button></div>';
+    if(!items.length){
+      html+='<div class="fb-empty">No feedback yet — submit some with the “Give feedback” button on any answer.</div>';
+    }
+    items.forEach(function(it){
+      var r = it.rating==="up"   ? '<span class="rate up">👍 helpful</span>'
+            : it.rating==="down" ? '<span class="rate down">👎 needs work</span>'
+            : '<span class="rate">— no rating</span>';
+      html+='<div class="fb-item"><div class="top">'+r+
+          '<span>'+esc(it.ts||"")+'</span><span>'+esc(it.trace_id||"")+'</span>'+
+          '<span>'+esc((it.language||"").toUpperCase())+'</span></div>'+
+        '<div class="q"><b>Q:</b> '+esc(it.prompt||"")+'</div>'+
+        (it.comment?'<div class="cm">“'+esc(it.comment)+'”</div>':'')+
+        '<details><summary>behind the scenes</summary><pre>'+esc(pipelineToText(it.pipeline))+'</pre></details>'+
+        '</div>';
+    });
+    fbPanel.innerHTML=html;
+    var rf=document.getElementById("fbRefresh"); if(rf){ rf.onclick=loadFeedback; }
+  }
+
+  // greet
+  applyLang();
+  addBot({bot_text:UI.en.greet, language:"en", sources:[], assistant:{}, pipeline:null});
+})();
+</script>
 </body>
 </html>

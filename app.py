@@ -28,7 +28,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from flask import Flask, request, jsonify, render_template, g
+from flask import Flask, request, jsonify, render_template, g, Response
 
 # Bilingual language detection + entity extraction, reused from the
 # team_a_nlp track (Team A). See nlp_enrichment.py for credit.
@@ -42,6 +42,17 @@ import intent_schema       # 4-dim → canonical nlp_intent_schema_v2 (Team D)
 import routing_adapter     # real Team B router / LangGraph agent, regex fallback
 import asr_adapter         # Team C voice-input adapter (+ fixtures)
 import obs                 # structured JSON logging + trace_id (Team D schema)
+
+# LLM-first path (see LOCAL_FIRST_PLAN.md): a provider-agnostic OpenAI-compatible
+# client + a single grounded answering call. Active when LLM_BASE_URL/LLM_MODEL are
+# set (DeepInfra/Qwen3-32B today, on-prem vLLM later); otherwise the app falls back
+# to the offline keyword classifier below, so it still boots with zero config.
+import llm
+import assistant
+import feedback            # sovereign feedback capture (prompt + pipeline + user note)
+import transactions        # sovereign in-process gov-record lookups (business/tax/land/licence)
+import translate           # pluggable EN<->DZ machine translation (Google Cloud Translate)
+import tts_dz             # live Dzongkha TTS (MMS-TTS-dzo) with caching
 
 try:
     import google.generativeai as genai
@@ -745,6 +756,12 @@ ENGINE     = ConversationEngine()
 # Structured JSON logging + per-request trace_id (Team D schema). Registers
 # Flask before/after_request hooks that mint/accept and echo X-Trace-ID.
 obs.init_app(app)
+if llm.is_configured():
+    print(f"[startup] LLM-first path ENABLED -> {llm.provider_label()} "
+          f"(grounded single-call; offline keyword classifier is the fallback)")
+else:
+    print("[startup] LLM-first path disabled (set LLM_BASE_URL/LLM_API_KEY/LLM_MODEL to enable). "
+          f"Using offline pipeline. openai_sdk={llm.sdk_available()}")
 print(f"[startup] RAG_BACKEND={RAG_BACKEND} · EMIT_CANONICAL_INTENT={EMIT_CANONICAL_INTENT} · "
       f"logging={obs.backend_name()} · team_b_rule_router={routing_adapter.TEAM_B_RULE_AVAILABLE} · "
       f"team_a_nlp_rag={rag.UPSTREAM_AVAILABLE}")
@@ -775,8 +792,195 @@ def _status_for_route(backend: str) -> str:
     return "fallback(inline regex copy)"
 
 
+def _classification_from_assistant(a: Dict) -> Dict[str, ClassificationResult]:
+    """Synthesize the legacy 4-dim shape from the assistant's structured output, so the
+    canonical schema (Team D), trace logging, and the UI keep working unchanged."""
+    conf = float(a.get("confidence", 0.0) or 0.0)
+    return {
+        "in_scope":     ClassificationResult("in_scope" if a.get("in_scope", True) else "out_of_scope", conf),
+        "safety":       ClassificationResult("safe" if a.get("safe", True) else "unsafe", conf),
+        "request_type": ClassificationResult("general_info", conf),  # not needed in the LLM-first design
+        "service":      ClassificationResult(a.get("service", "general"), conf),
+    }
+
+
 def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None) -> Dict:
-    """The full per-turn pipeline, shared by /api/chat and /api/voice.
+    """Dispatch: LLM-first grounded path when an LLM endpoint is configured, else the
+    offline keyword/template fallback. Both return the same result shape."""
+    if llm.is_configured():
+        try:
+            return _run_pipeline_llm_first(user_text, trace_id, asr_meta)
+        except Exception as exc:  # network/parse error → don't fail the request
+            obs.log_event("WARN", "llm.error",
+                          f"LLM-first path failed ({type(exc).__name__}); using offline fallback",
+                          trace_id, error=str(exc))
+    return _run_pipeline_legacy(user_text, trace_id, asr_meta)
+
+
+def _run_pipeline_llm_first(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None) -> Dict:
+    """LLM-first turn: enrich → English-pivot grounding retrieval → ONE grounded LLM call
+    (answers in the user's language, quotes native Dzongkha, refuses/abstains) → route →
+    canonical-intent → respond. Classification falls out of the same call."""
+    t0 = time.time()
+    obs.log_event("INFO", "chat.received",
+                  f"input received via {'voice' if asr_meta else 'text'}",
+                  trace_id, chars=len(user_text), via="voice" if asr_meta else "text")
+
+    # enrich — deterministic language detection + entity extraction (Team A NLP)
+    enrichment = enrich(user_text)
+    language = enrichment["language"]
+    entities = enrichment["entities"]
+
+    # Retrieve with the ORIGINAL query for a reliable lexical match (Dzongkha-on-Dzongkha,
+    # English-on-English), then answer from the aligned English text. For Dzongkha we translate
+    # only the QUESTION so the LLM understands it — retrieval never rides on translation drift.
+    if language == "dz":
+        grounding = rag.retrieve_grounding(user_text, language="dz", top_k=3)
+        q_for_llm = translate.to_english(user_text) if translate.available() else user_text
+    else:
+        grounding = rag.retrieve_grounding(user_text, language="en", top_k=3)
+        q_for_llm = user_text
+
+    # TRANSACTION (agentic ONLY here — LOCAL_FIRST_PLAN.md §1 step 4): a deterministic,
+    # in-process lookup of the citizen's own record, fired ONLY when a concrete ID is present.
+    # The result is injected as an authoritative LIVE RECORD block into the SAME single call —
+    # no extra model call, no Groq, fully sovereign. Ownership is checked before any reveal.
+    txn = transactions.detect_and_lookup(user_text, entities)
+    txn_block = transactions.context_block(txn) if txn else None
+
+    a = assistant.answer(q_for_llm, "en", grounding, transaction=txn_block)
+
+    classification = _classification_from_assistant(a)
+    service = classification["service"].label
+    en_answer = a["answer"]
+    bot_text = en_answer
+    if txn:
+        sources = [txn["source"]] if txn["authorized"] else []
+        rag_backend = f"transaction[{txn['kind']}:{txn['status']}]"
+    else:
+        sources = a.get("sources_used") or [c["source"] for c in grounding]
+        rag_backend = "grounding[docs]" if grounding else "grounding[none]"
+
+    # Dzongkha output: translate the conversational English answer (numbers preserved), and
+    # synthesize it live with MMS-TTS-dzo. Fall back to quoting the verbatim native passage
+    # if no translator is configured. Either way, register the text for /api/tts playback.
+    audio_url = None
+    translated = False
+    tts_mode = "n/a"
+    if language == "dz" and not a.get("abstained"):
+        dz = translate.to_dzongkha(en_answer)
+        if dz:
+            bot_text = dz
+            translated = True
+        else:
+            chosen = a.get("chosen_block") or {}
+            if chosen.get("dz_text"):
+                bot_text = chosen["dz_text"].strip()  # verbatim native fallback
+        h = tts_dz.register_text(bot_text)
+        if h:
+            audio_url = f"/api/tts/{h}"
+            tts_mode = "mms-tts-dzo(live)"
+        else:
+            tts_mode = "off(no tts)"
+
+    # routing — real Team B router if available, else inline fallback (unchanged)
+    route_res = routing_adapter.route(user_text, trace_id)
+    routing = route_res.routing
+
+    # canonical intent schema (Team D) — map → v2 + validate
+    canonical = None
+    schema_status: Dict = {"emitted": False}
+    if EMIT_CANONICAL_INTENT:
+        canonical = intent_schema.to_canonical_payload(
+            user_text=user_text, language=language, classification=classification,
+            classifier_kind="LLMAssistant", entities=entities, routing=routing,
+            trace_id=trace_id, latency_ms=int((time.time() - t0) * 1000),
+        )
+        ok_ext, _ = intent_schema.validate(canonical)
+        ok_strict, err_strict = intent_schema.validate(canonical, strict_canonical=True)
+        schema_status = {
+            "emitted": True,
+            "canonical_intent": canonical["classification"]["intent"],
+            "extended_valid": ok_ext,
+            "strict_canonical_valid": ok_strict,
+            "strict_canonical_note": err_strict,
+        }
+
+    obs.log_event("INFO", "route.decided",
+                  f"routed to {routing.get('agent')} via {route_res.backend}", trace_id,
+                  intent=routing.get("intent"), agent=routing.get("agent"),
+                  rag_backend=rag_backend, routing_backend=route_res.backend)
+
+    pipeline = {
+        "trace_id": trace_id,
+        "classify":  {"component": "LLM (grounded, single call)",
+                      "status": f"real({llm.provider_label()})"},
+        "enrich":    {"component": "nlp_enrichment (Team A NLP)", "status": "real"},
+        "rag":       {"component": rag_backend,
+                      "status": "real(English-pivot grounding)" if grounding
+                                else "abstain(no grounded passage)",
+                      "detail": f"{len(grounding)} paired EN+DZ section(s)"},
+        "transaction": ({"component": "transactions.py (sovereign, in-process)",
+                         "kind": txn["kind"], "id": txn["id"], "status": txn["status"],
+                         "authorized": txn["authorized"], "source": txn["source"]}
+                        if txn else {"component": "transactions.py", "status": "none(no record id)"}),
+        "assistant": {"component": "assistant.answer (grounded)",
+                      "abstained": a.get("abstained", False),
+                      "in_scope": a.get("in_scope"), "safe": a.get("safe"),
+                      "confidence": a.get("confidence"),
+                      "status": "parse_error" if a.get("parse_error") else "ok"},
+        "route":     {"component": route_res.backend, "status": _status_for_route(route_res.backend),
+                      "detail": route_res.detail},
+        "schema":    {"component": "nlp_intent_schema_v2 (Team D)", **schema_status},
+        "speak":     {"component": f"translate[{translate.backend_label()}] + {tts_mode}",
+                      "translated_to_dz": translated, "audio": bool(audio_url)},
+        "logging":   {"component": obs.backend_name(),
+                      "status": "real(Team D)" if obs.TEAM_D_LOGGING_AVAILABLE
+                                else "fallback(team-d schema)"},
+    }
+    if asr_meta:
+        pipeline["asr"] = {"component": "asr_adapter (Team C contract)",
+                           "status": "client" if asr_meta.get("source") == "client"
+                                     else "stub(fixture)",
+                           "confidence": asr_meta.get("confidence"),
+                           "language": asr_meta.get("language")}
+
+    obs.log_event("INFO", "chat.completed", "turn complete", trace_id,
+                  latency_ms=int((time.time() - t0) * 1000), service=service,
+                  language=language, classifier="LLMAssistant")
+
+    result = {
+        "bot_text":    bot_text,
+        "sources":     sources,
+        "step_label":  "",
+        "fallback_id": None,
+        "ref_no":      f"REF-{uuid.uuid4().hex[:8].upper()}",
+        "classification": {
+            k: {"label": v.label, "confidence": v.confidence}
+            for k, v in classification.items()
+        },
+        "language":    language,
+        "entities":    entities,
+        "routing":     routing,
+        "classifier_kind": "LLMAssistant",
+        "trace_id":    trace_id,
+        "pipeline":    pipeline,
+        "canonical_intent": canonical,
+        "audio_url":   audio_url,
+        "assistant":   {"abstained": a.get("abstained", False),
+                        "in_scope": a.get("in_scope", True),
+                        "safe": a.get("safe", True),
+                        "confidence": a.get("confidence", 0.0),
+                        "sources": sources},
+    }
+    if asr_meta:
+        result["asr"] = asr_meta
+    return result
+
+
+def _run_pipeline_legacy(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None) -> Dict:
+    """Offline fallback per-turn pipeline (keyword classifier + templates), used when no
+    LLM endpoint is configured.
 
     classify → enrich → RAG → route → canonical-intent → (Dzongkha) → respond,
     with trace_id carried through every stage and a `pipeline` report describing
@@ -795,6 +999,10 @@ def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None)
     enrichment = enrich(user_text)
     language = enrichment["language"]
     entities = enrichment["entities"]
+
+    # 2b) TRANSACTION — sovereign in-process record lookup (fires only on a concrete ID).
+    # Works even with no LLM: transactions.render_text() produces the reply directly.
+    txn = transactions.detect_and_lookup(user_text, entities)
 
     # 3) RAG retrieval (flag RAG_BACKEND); KB fallback handled in the engine
     service = classification["service"].label
@@ -836,7 +1044,13 @@ def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None)
                   rag_backend=response.rag_backend, routing_backend=route_res.backend)
 
     # 6) Dzongkha reply (Gemini translation; English-only without a key)
-    bot_text = response.bot_text
+    # A transaction result (if any) replaces the templated body with the record answer.
+    if txn:
+        bot_text = transactions.render_text(txn)
+        txn_sources = [txn["source"]] if txn["authorized"] else []
+    else:
+        bot_text = response.bot_text
+        txn_sources = None
     translated = False
     if language == "dz" and TRANSLATOR is not None:
         dzongkha = TRANSLATOR.to_dzongkha(bot_text)
@@ -853,6 +1067,10 @@ def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None)
         "rag":      {"component": response.rag_backend,
                      "status": _status_for_rag(response.rag_backend),
                      "detail": getattr(rag_result, "detail", "") if rag_result else "RAG_BACKEND=kb"},
+        "transaction": ({"component": "transactions.py (sovereign, in-process)",
+                         "kind": txn["kind"], "id": txn["id"], "status": txn["status"],
+                         "authorized": txn["authorized"], "source": txn["source"]}
+                        if txn else {"component": "transactions.py", "status": "none(no record id)"}),
         "route":    {"component": route_res.backend, "status": _status_for_route(route_res.backend),
                      "detail": route_res.detail},
         "schema":   {"component": "nlp_intent_schema_v2 (Team D)", **schema_status},
@@ -875,7 +1093,7 @@ def run_pipeline(user_text: str, trace_id: str, asr_meta: Optional[Dict] = None)
 
     result = {
         "bot_text":    bot_text,
-        "sources":     response.sources,
+        "sources":     txn_sources if txn_sources is not None else response.sources,
         "step_label":  response.step_label,
         "fallback_id": response.fallback_id,
         "ref_no":      response.ref_no,
@@ -924,10 +1142,61 @@ def voice():
     return jsonify(run_pipeline(asr.transcript, g.trace_id, asr_meta=asr.to_dict()))
 
 
-@app.route("/healthz")
+@app.route("/api/tts/<h>")
+def api_tts(h):
+    """Serve live-synthesized Dzongkha audio (MMS-TTS-dzo) for a registered answer hash."""
+    data = tts_dz.get_wav(h)
+    if not data:
+        return ("not found", 404)
+    return Response(data, mimetype="audio/wav",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.route("/api/feedback", methods=["POST"])
+def api_feedback_submit():
+    """Capture one feedback submission: the input prompt, the behind-the-scenes
+    pipeline snapshot, and the user's written note + quick rating."""
+    payload = request.get_json(silent=True) or {}
+    if not (payload.get("comment") or payload.get("rating")):
+        return jsonify({"error": "please add a rating or a comment"}), 400
+    item = feedback.record({
+        "trace_id": payload.get("trace_id"),
+        "prompt":   payload.get("prompt"),
+        "answer":   payload.get("answer"),
+        "language": payload.get("language"),
+        "rating":   payload.get("rating"),
+        "comment":  payload.get("comment"),
+        "pipeline": payload.get("pipeline"),
+    })
+    obs.log_event("INFO", "feedback.received", "user feedback captured",
+                  payload.get("trace_id") or g.trace_id,
+                  rating=item["rating"], has_comment=bool(item["comment"]))
+    return jsonify({"ok": True, "id": item["id"]})
+
+
+@app.route("/api/feedback", methods=["GET"])
+def api_feedback_list():
+    """All captured feedback (newest first) — powers the dev-mode viewer."""
+    return jsonify({"count": feedback.count(), "items": feedback.all_feedback()})
+
+
+@app.route("/health")
+@app.route("/status")
+@app.route("/healthz")  # note: GCP frontend reserves /healthz — use /health or /status
 def healthz():
     return {
         "ok": True,
+        "primary_path": "llm-first" if llm.is_configured() else "offline-fallback",
+        "llm": {
+            "configured": llm.is_configured(),
+            "provider": llm.provider_label(),
+            "openai_sdk": llm.sdk_available(),
+        },
+        "voice": {
+            "translate": translate.backend_label(),
+            "translate_available": translate.available(),
+            "dz_tts": "mms-tts-dzo" if tts_dz.available() else "unavailable",
+        },
         "classifier": type(CLASSIFIER).__name__,
         "flags": {
             "RAG_BACKEND": RAG_BACKEND,

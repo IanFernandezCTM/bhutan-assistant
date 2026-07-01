@@ -59,6 +59,24 @@ def extract_entities(text: str) -> Dict[str, str]:
     if plot_match:
         entities["plot_id"] = plot_match.group(1)
 
+    # Business / permit registration ID, e.g. BT-PERMIT-2026-1234, BT-REG-2026-9988.
+    biz_match = re.search(r"\bBT-(?:PERMIT|REG)-\d{4}-\d+\b", text, re.IGNORECASE)
+    if biz_match:
+        entities["business_id"] = biz_match.group(0).upper()
+
+    # Licence ID, e.g. BT-LIC-2026-0011 (permit-application status).
+    lic_match = re.search(r"\bBT-LIC-\d{4}-\d+\b", text, re.IGNORECASE)
+    if lic_match:
+        entities["license_id"] = lic_match.group(0).upper()
+
+    # Land identifiers: a thram number (TH-441) and/or a plot number (PLOT-90).
+    thram_match = re.search(r"\bTH[- ]?(\d+)\b", text, re.IGNORECASE)
+    if thram_match:
+        entities["thram_no"] = f"TH-{thram_match.group(1)}"
+    plot_no_match = re.search(r"\bPLOT[- ]?(\d+)\b", text, re.IGNORECASE)
+    if plot_no_match:
+        entities["plot_no"] = f"PLOT-{plot_no_match.group(1)}"
+
     # Tax / reference year: 20xx
     year_match = re.search(r"\b(20\d{2})\b", text)
     if year_match:

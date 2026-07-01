@@ -101,7 +101,8 @@ def _try_agent_route(text: str, trace_id: str) -> Optional[RouteResult]:
         return RouteResult(routing, "agent[team_b]",
                            detail="Team B LangGraph/ReAct pipeline (Groq)",
                            agent_response=str(out.get("agent_response") or "") or None)
-    except Exception as exc:
+ #    except Exception as exc:
+    except Exception:
         return None  # caller logs and falls back to rule router
 
 
